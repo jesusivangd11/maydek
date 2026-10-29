@@ -13,6 +13,7 @@ import '@pos/styles/base.css';
 import '@pos/styles/ui.css';
 import '@pos/styles/screens.css';
 import './admin.css';
+import '@pos/styles/venta.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

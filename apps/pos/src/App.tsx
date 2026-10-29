@@ -1,23 +1,48 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { CustomersScreen } from '@admin/screens/Customers';
+import { InventoryScreen } from '@admin/screens/Inventory';
+import { ProductsScreen } from '@admin/screens/Products';
+import { ReportsScreen } from '@admin/screens/Reports';
+import { SettingsScreen } from '@admin/screens/Settings';
+import { UsersScreen } from '@admin/screens/Users';
 import { CashPanel } from './components/CashPanel';
-import { PosScreen } from './components/PosScreen';
 import { SalesHistory } from './components/SalesHistory';
+import { VentaScreen } from './components/VentaScreen';
 import { ApiError, api, setAccessToken, type CashSession, type SessionUser } from './lib/api';
 import { formatMoney } from './lib/format';
-import { Alert, Badge, Button, Field, TextInput } from './ui';
+import { loadSettings } from './lib/settings';
+import { Alert, Button, Field, TextInput } from './ui';
 
 /**
  * Punto de venta.
  *
- * Tres vistas y nada más: vender, caja y ventas. Un POS con menús anidados es
- * un POS lento, y detrás de un mostrador la velocidad es la característica.
+ * Una sola ventana con la barra de módulos arriba, como la conoce cualquier
+ * cajero: F1 Ventas, F2 Clientes, F3 Productos, F4 Inventario, y después
+ * Reportes, Usuarios, Configuración y Corte. La venta en curso nunca se
+ * pierde al cambiar de módulo: la pantalla de venta sigue montada debajo.
  *
  * Los permisos que se consultan aquí solo deciden qué se PINTA. Quien manda es
  * el servidor: cada endpoint verifica el permiso otra vez, así que ocultar un
  * botón es comodidad, no seguridad.
  */
 
-type View = 'pos' | 'cash' | 'sales';
+type View =
+  | 'venta'
+  | 'clientes'
+  | 'productos'
+  | 'inventario'
+  | 'reportes'
+  | 'usuarios'
+  | 'config'
+  | 'corte'
+  | 'historial';
+
+interface ModuleDef {
+  id: View;
+  label: string;
+  key?: string;
+  visible: boolean;
+}
 
 const DESKTOP = import.meta.env.VITE_TARGET === 'desktop';
 
@@ -35,7 +60,7 @@ export function App() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<View>('pos');
+  const [view, setView] = useState<View>('venta');
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
   /** Venta que el historial debe abrir al entrar, tras pulsar "Ver venta". */
   const [focusSaleId, setFocusSaleId] = useState<string | null>(null);
@@ -71,7 +96,7 @@ export function App() {
       .then(async (result) => {
         setAccessToken(result.accessToken);
         setUser(result.user);
-        await refreshCash();
+        await Promise.all([refreshCash(), loadSettings()]);
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -84,7 +109,7 @@ export function App() {
         const result = await api.login(email, password);
         setAccessToken(result.accessToken);
         setUser(result.user);
-        await refreshCash();
+        await Promise.all([refreshCash(), loadSettings()]);
       } catch (err) {
         setError(
           err instanceof ApiError
@@ -101,8 +126,24 @@ export function App() {
     setAccessToken(null);
     setUser(null);
     setCashSession(null);
-    setView('pos');
+    setView('venta');
   }, []);
+
+  // F1–F4: los módulos principales, desde cualquier pantalla.
+  useEffect(() => {
+    if (!user) return;
+    const byKey: Record<string, View> = { F1: 'venta', F2: 'clientes', F3: 'productos', F4: 'inventario' };
+    function onKey(event: KeyboardEvent) {
+      const target = byKey[event.key];
+      if (!target) return;
+      event.preventDefault();
+      // Con un diálogo abierto, la tecla no saca a nadie de lo que está haciendo.
+      if (document.querySelector('.overlay')) return;
+      setView(target);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [user]);
 
   if (loading) {
     return (
@@ -117,67 +158,91 @@ export function App() {
 
   const can = (permission: string) => user.permissions.includes(permission);
 
-  const sections: { id: View; label: string; visible: boolean }[] = [
-    { id: 'pos', label: 'Vender', visible: true },
-    { id: 'cash', label: 'Caja', visible: can('cash.open') || can('cash.report.x') },
-    { id: 'sales', label: 'Ventas', visible: can('sale.view') },
+  const modules: ModuleDef[] = [
+    { id: 'venta', label: 'Ventas', key: 'F1', visible: true },
+    { id: 'clientes', label: 'Clientes', key: 'F2', visible: can('customer.view') },
+    { id: 'productos', label: 'Productos', key: 'F3', visible: can('product.view') },
+    { id: 'inventario', label: 'Inventario', key: 'F4', visible: can('inventory.view') },
+    { id: 'reportes', label: 'Reportes', visible: can('report.sales') || can('report.inventory') },
+    { id: 'usuarios', label: 'Usuarios', visible: can('user.view') },
+    { id: 'config', label: 'Configuración', visible: can('settings.view') || can('settings.manage') },
+    { id: 'corte', label: 'Corte', visible: can('cash.open') || can('cash.report.x') },
   ];
+
+  // Un módulo sin permiso no se abre aunque llegue por teclado.
+  const allowed = (id: View) => id === 'historial' ? can('sale.view') : modules.find((m) => m.id === id)?.visible;
+  const current: View = allowed(view) ? view : 'venta';
+
+  const screens: Partial<Record<View, () => ReactNode>> = {
+    clientes: () => <CustomersScreen user={user} />,
+    productos: () => <ProductsScreen user={user} />,
+    inventario: () => <InventoryScreen user={user} />,
+    reportes: () => <ReportsScreen user={user} />,
+    usuarios: () => <UsersScreen user={user} />,
+    config: () => <SettingsScreen user={user} />,
+    corte: () => (
+      <CashPanel session={cashSession} canClose={can('cash.close')} onChanged={() => void refreshCash()} />
+    ),
+    historial: () => (
+      <SalesHistory
+        permissions={user.permissions}
+        initialSaleId={focusSaleId}
+        onOpened={() => setFocusSaleId(null)}
+      />
+    ),
+  };
 
   return (
     <div className="shell">
-      {/* ── Navegación principal ──────────────────────────────────────────
-          Identidad, secciones y contexto de trabajo. El estado de caja vive
-          aquí, y no dentro de Caja, porque condiciona todo lo demás: sin
-          sesión abierta no se puede cobrar, y eso hay que verlo desde
-          cualquier pantalla sin cambiar de sección. */}
+      {/* ── Barra de módulos ──────────────────────────────────────────────
+          Identidad, módulos y contexto de trabajo. El estado de caja vive
+          aquí porque condiciona todo lo demás: sin caja abierta no se puede
+          cobrar, y eso hay que verlo desde cualquier módulo. */}
       <header className="topbar on-navy">
         <div className="topbar__left">
           <div className="brand">
             <img className="brand__logo" src={`${BRAND_DIR}maydek-lockup.png`} alt="Maydek" />
             <img className="brand__symbol" src={`${BRAND_DIR}maydek-mark.png`} alt="Maydek" />
-            <span className="brand__name">
-              <span className="brand__sub">Caja</span>
-            </span>
           </div>
 
-          <nav className="nav" aria-label="Secciones">
-            {sections
-              .filter((section) => section.visible)
-              .map((section) => (
+          <nav className="modules" aria-label="Módulos">
+            {modules
+              .filter((m) => m.visible)
+              .map((m) => (
                 <button
-                  key={section.id}
+                  key={m.id}
                   type="button"
-                  className="nav__item"
-                  aria-current={view === section.id ? 'page' : undefined}
+                  className="module"
+                  aria-current={current === m.id ? 'page' : undefined}
                   onClick={() => {
-                    setView(section.id);
-                    if (section.id === 'cash') void refreshCash();
+                    setView(m.id);
+                    if (m.id === 'corte') void refreshCash();
                   }}
                 >
-                  {section.label}
+                  {m.key && <span className="module__key">{m.key}</span>}
+                  {m.label}
                 </button>
               ))}
+            <button type="button" className="module module--exit" onClick={logout}>
+              <span className="module__key">⏻</span>
+              Salir
+            </button>
           </nav>
         </div>
 
         <div className="topbar__right">
           {!online && (
-            <Badge tone="warning" large title="Se muestra el último catálogo consultado. Para cobrar hace falta conexión.">
+            <span className="flag flag--accent" title="Se muestra el último catálogo consultado. Para cobrar hace falta conexión.">
               Sin conexión
-            </Badge>
+            </span>
           )}
           {cashSession ? (
-            <Badge tone="positive" large title={`Sesión ${cashSession.folio}`}>
+            <span className="flag flag--positive" title={`Sesión ${cashSession.folio}`}>
               Caja abierta
-              {/* En pantallas estrechas el importe se retira antes que el
-                  estado: saber si la caja está abierta importa más que saber
-                  cuánto lleva, y el dato completo sigue en la sección Caja. */}
               <span className="badge__detail">· {formatMoney(cashSession.expectedCash)}</span>
-            </Badge>
+            </span>
           ) : (
-            <Badge tone="danger" large>
-              Caja cerrada
-            </Badge>
+            <span className="flag flag--danger">Caja cerrada</span>
           )}
 
           <span className="topbar__divider" aria-hidden="true" />
@@ -188,38 +253,25 @@ export function App() {
               {user.roles.map((role) => ROLE_LABELS[role] ?? role).join(' · ')}
             </span>
           </span>
-
-          <Button variant="subtle" icon="logout" onClick={logout}>
-            Salir
-          </Button>
         </div>
       </header>
 
       <main className="content">
-        {view === 'pos' && (
-          <PosScreen
+        {/* La venta queda montada aunque se abra otro módulo: el ticket a
+            medias sigue ahí al volver con F1. */}
+        <div hidden={current !== 'venta'} className="module-view">
+          <VentaScreen
             permissions={user.permissions}
-            hasOpenCashSession={cashSession !== null}
+            cashSessionId={cashSession?.id ?? null}
+            active={current === 'venta'}
             onSaleCompleted={() => void refreshCash()}
-            onViewSale={(saleId) => {
-              setFocusSaleId(saleId);
-              setView('sales');
-            }}
+            onShowSales={() => setView('historial')}
           />
-        )}
-        {view === 'cash' && (
-          <CashPanel
-            session={cashSession}
-            canClose={can('cash.close')}
-            onChanged={() => void refreshCash()}
-          />
-        )}
-        {view === 'sales' && (
-          <SalesHistory
-            permissions={user.permissions}
-            initialSaleId={focusSaleId}
-            onOpened={() => setFocusSaleId(null)}
-          />
+        </div>
+        {current !== 'venta' && (
+          <div key={current} className="module-view">
+            {screens[current]?.()}
+          </div>
         )}
       </main>
     </div>

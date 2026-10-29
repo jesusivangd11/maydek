@@ -340,36 +340,33 @@
 }
 
 /* ── Distintivo de estado ─────────────────────────────────────────────────
-   Color con significado, nunca decorativo. El punto de delante hace que el
-   estado se lea sin depender del color, que es lo que necesita quien no
-   distingue verde de rojo.
+   Un recuadro de esquinas rectas con una barra de color a la izquierda, no
+   una píldora: se lee como una etiqueta de mostrador. Color con significado,
+   nunca decorativo; la barra y el texto en mayúsculas hacen que el estado se
+   lea sin depender del color.
    ─────────────────────────────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
   height: 26px;
-  padding: 0 var(--s-3);
+  padding: 0 var(--s-3) 0 var(--s-2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
+  border-left: 4px solid currentColor;
+  border-radius: 2px;
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.badge::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  flex: none;
-}
-
-.badge--bare::before {
-  display: none;
+.badge--bare {
+  border-left-width: 1px;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .badge--positive {

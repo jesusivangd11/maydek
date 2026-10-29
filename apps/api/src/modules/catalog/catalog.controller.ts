@@ -32,6 +32,13 @@ export class CatalogController {
     return this.catalog.posSearch(query, actor);
   }
 
+  @Get('pos/common-item')
+  @RequirePermission(PERMISSIONS.SALE_CREATE)
+  @ApiOperation({ summary: 'Artículo de sistema para vender un «producto común»' })
+  commonItem() {
+    return this.catalog.commonItem();
+  }
+
   // ── Productos ──
   @Get('products')
   @RequirePermission(PERMISSIONS.PRODUCT_VIEW)

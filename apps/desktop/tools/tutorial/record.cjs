@@ -297,11 +297,15 @@ async function main() {
       }
       await sleep(200);
     },
-    async key(name) {
-      stage.webContents.sendInputEvent({ type: 'keyDown', keyCode: name });
+    async key(combo) {
+      // 'Control+P' → tecla P con el modificador control.
+      const parts = combo.split('+');
+      const name = parts.pop();
+      const modifiers = parts.map((m) => m.toLowerCase());
+      stage.webContents.sendInputEvent({ type: 'keyDown', keyCode: name, modifiers });
       // El envío implícito de un formulario sale del `keypress`, no del keydown.
-      if (name === 'Enter') stage.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
-      stage.webContents.sendInputEvent({ type: 'keyUp', keyCode: name });
+      if (name === 'Enter' && !modifiers.length) stage.webContents.sendInputEvent({ type: 'char', keyCode: '\r' });
+      stage.webContents.sendInputEvent({ type: 'keyUp', keyCode: name, modifiers });
       await sleep(450);
     },
     async selectAll() {

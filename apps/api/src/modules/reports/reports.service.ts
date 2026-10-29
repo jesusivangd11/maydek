@@ -4,6 +4,7 @@ import { money } from '@pv/domain-rules';
 import { PERMISSIONS, type AuthenticatedUser } from '@pv/shared-types';
 import { PrismaService } from '../../core/database/prisma.service';
 import { ValidationError } from '../../core/errors/domain-errors';
+import { PricingService } from '../catalog/pricing.service';
 import { PosContextService } from '../pos-context/pos-context.service';
 
 /**
@@ -30,6 +31,7 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly posContext: PosContextService,
+    private readonly pricing: PricingService,
   ) {}
 
   async dashboard(query: { from?: string; to?: string }, actor: AuthenticatedUser) {
@@ -241,6 +243,216 @@ export class ReportsService {
       value: money(r.value).toFixed(2),
       price: money(r.price).toFixed(2),
     }));
+  }
+
+  /**
+   * Ventas del periodo, ticket por ticket: el «reporte de ventas» de
+   * mostrador. Incluye las canceladas marcadas, para que el corte cuadre a la
+   * vista. `wholesale` filtra solo las ventas de mayoreo.
+   */
+  async salesDetail(
+    query: { from?: string; to?: string; userId?: string; wholesale?: boolean },
+    actor: AuthenticatedUser,
+  ) {
+    const ctx = await this.posContext.resolve(actor);
+    const range = this.range(query);
+    const wholesaleListId = await this.pricing.wholesalePriceListId();
+    const userFilter = query.userId ? Prisma.sql`AND s.user_id = ${query.userId}::uuid` : Prisma.empty;
+    const wholesaleFilter = query.wholesale
+      ? Prisma.sql`AND s.price_list_id = ${wholesaleListId}::uuid`
+      : Prisma.empty;
+
+    const rows = await this.prisma.client.$queryRaw<
+      {
+        id: string;
+        folio: string;
+        occurred_at: Date;
+        status: string;
+        cashier: string;
+        customer: string | null;
+        items: string;
+        total: string;
+        subtotal: string;
+        cost: string;
+        methods: string | null;
+        wholesale: boolean;
+      }[]
+    >`
+      SELECT s.id, s.folio, s.occurred_at, s.status::text AS status, u.name AS cashier,
+             COALESCE(NULLIF(TRIM(COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')), ''), c.business_name) AS customer,
+             (SELECT COALESCE(SUM(si.qty), 0) FROM sale_items si WHERE si.sale_id = s.id)::text AS items,
+             s.total::text AS total, s.subtotal::text AS subtotal, s.cost_total::text AS cost,
+             (SELECT string_agg(DISTINCT pm.name, ', ')
+                FROM payments p JOIN payment_methods pm ON pm.id = p.payment_method_id
+               WHERE p.sale_id = s.id) AS methods,
+             (s.price_list_id IS NOT DISTINCT FROM ${wholesaleListId}::uuid) AS wholesale
+      FROM sales s
+      JOIN users u ON u.id = s.user_id
+      LEFT JOIN customers c ON c.id = s.customer_id
+      WHERE s.occurred_at BETWEEN ${range.from} AND ${range.to}
+        AND s.branch_id = ${ctx.branchId}::uuid
+        ${userFilter} ${wholesaleFilter}
+      ORDER BY s.occurred_at DESC
+      LIMIT 2000`;
+
+    const showProfit = actor.permissions.includes(PERMISSIONS.REPORT_PROFIT);
+    const valid = rows.filter((r) => r.status !== 'CANCELLED');
+    const total = valid.reduce((acc, r) => acc.plus(money(r.total)), money('0'));
+    const profit = valid.reduce(
+      (acc, r) => acc.plus(money(r.subtotal)).minus(money(r.cost)),
+      money('0'),
+    );
+
+    return {
+      range: { from: range.from, to: range.to, timezone: ctx.timezone },
+      summary: {
+        count: valid.length,
+        cancelled: rows.length - valid.length,
+        total: total.toFixed(2),
+        averageTicket: valid.length > 0 ? total.dividedBy(valid.length).toFixed(2) : '0.00',
+        ...(showProfit ? { profit: profit.toFixed(2) } : {}),
+      },
+      data: rows.map((r) => ({
+        id: r.id,
+        folio: r.folio,
+        occurredAt: r.occurred_at,
+        status: r.status,
+        cashier: r.cashier,
+        customer: r.customer,
+        items: money(r.items).toString(),
+        total: money(r.total).toFixed(2),
+        methods: r.methods ?? '',
+        wholesale: r.wholesale,
+        ...(showProfit ? { profit: money(r.subtotal).minus(money(r.cost)).toFixed(2) } : {}),
+      })),
+    };
+  }
+
+  /** Ventas de mayoreo: resumen, ticket por ticket y por artículo. */
+  async wholesaleSales(query: { from?: string; to?: string }, actor: AuthenticatedUser) {
+    const ctx = await this.posContext.resolve(actor);
+    const range = this.range(query);
+    const wholesaleListId = await this.pricing.wholesalePriceListId();
+    const detail = await this.salesDetail({ ...query, wholesale: true }, actor);
+
+    const products = await this.prisma.client.$queryRaw<
+      { sku: string; name: string; qty: string; total: string }[]
+    >`
+      SELECT si.sku_snapshot AS sku, MAX(si.name_snapshot) AS name,
+             SUM(si.qty - si.returned_qty)::text AS qty,
+             SUM(si.line_total * (1 - si.returned_qty / NULLIF(si.qty, 0)))::text AS total
+      FROM sale_items si
+      JOIN sales s ON s.id = si.sale_id
+      WHERE s.status <> 'CANCELLED' AND s.occurred_at BETWEEN ${range.from} AND ${range.to}
+        AND s.branch_id = ${ctx.branchId}::uuid
+        AND s.price_list_id = ${wholesaleListId}::uuid
+      GROUP BY si.sku_snapshot
+      ORDER BY 4 DESC NULLS LAST
+      LIMIT 500`;
+
+    return {
+      ...detail,
+      products: products.map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        qty: money(p.qty ?? '0').toString(),
+        total: money(p.total ?? '0').toFixed(2),
+      })),
+    };
+  }
+
+  /**
+   * Inventario de la sucursal, artículo por artículo, con su estado: en
+   * negativo (se vendió sin existencia y falta capturar la entrada), agotado,
+   * bajo el mínimo u ok. Los artículos sin movimientos salen en cero.
+   */
+  async inventoryStatus(
+    query: { filter?: 'all' | 'negative' | 'out' | 'low' },
+    actor: AuthenticatedUser,
+  ) {
+    const ctx = await this.posContext.resolve(actor);
+    const rows = await this.prisma.client.$queryRaw<
+      {
+        variant_id: string;
+        sku: string;
+        name: string;
+        category: string | null;
+        qty: string;
+        min_stock: string | null;
+        avg_cost: string;
+        price: string;
+      }[]
+    >`
+      SELECT v.id AS variant_id, v.sku, p.name || COALESCE(' ' || v.name_suffix, '') AS name,
+             c.name AS category,
+             COALESCE(b.qty_on_hand, 0)::text AS qty,
+             v.min_stock::text AS min_stock,
+             COALESCE(b.avg_cost, v.cost)::text AS avg_cost,
+             v.base_price::text AS price
+      FROM product_variants v
+      JOIN products p ON p.id = v.product_id
+      LEFT JOIN categories c ON c.id = p.category_id
+      LEFT JOIN stock_balances b
+        ON b.variant_id = v.id AND b.condition = 'GOOD' AND b.warehouse_id = ${ctx.warehouseId}::uuid
+      WHERE v.deleted_at IS NULL AND p.deleted_at IS NULL AND v.is_active AND p.is_active
+        AND p.track_stock
+      ORDER BY p.name, v.sku`;
+
+    const showCost = actor.permissions.includes(PERMISSIONS.PRODUCT_COST_VIEW);
+
+    const items = rows.map((r) => {
+      const qty = money(r.qty);
+      const min = r.min_stock !== null ? money(r.min_stock) : null;
+      const status: 'NEGATIVE' | 'OUT' | 'LOW' | 'OK' = qty.lt(0)
+        ? 'NEGATIVE'
+        : qty.isZero()
+          ? 'OUT'
+          : min !== null && qty.lte(min)
+            ? 'LOW'
+            : 'OK';
+      return {
+        variantId: r.variant_id,
+        sku: r.sku,
+        name: r.name,
+        category: r.category,
+        qty: qty.toString(),
+        minStock: min?.toString() ?? null,
+        price: money(r.price).toFixed(2),
+        status,
+        ...(showCost
+          ? { cost: money(r.avg_cost).toFixed(2), value: qty.times(money(r.avg_cost)).toFixed(2) }
+          : {}),
+      };
+    });
+
+    const filter = query.filter ?? 'all';
+    const filtered = items.filter((i) =>
+      filter === 'negative'
+        ? i.status === 'NEGATIVE'
+        : filter === 'out'
+          ? i.status === 'OUT' || i.status === 'NEGATIVE'
+          : filter === 'low'
+            ? i.status === 'LOW'
+            : true,
+    );
+
+    return {
+      summary: {
+        products: items.length,
+        negative: items.filter((i) => i.status === 'NEGATIVE').length,
+        out: items.filter((i) => i.status === 'OUT').length,
+        low: items.filter((i) => i.status === 'LOW').length,
+        ...(showCost
+          ? {
+              value: items
+                .filter((i) => money(i.qty).gt(0))
+                .reduce((acc, i) => acc.plus(money(i.value ?? '0')), money('0'))
+                .toFixed(2),
+            }
+          : {}),
+      },
+      data: filtered,
+    };
   }
 
   private async topProducts(range: Range, branchId: string, limit: number) {

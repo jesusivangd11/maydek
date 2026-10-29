@@ -48,6 +48,12 @@ export class SaleItemDto {
 
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200)
   discountReason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Solo para el producto común: lo que el cajero escribió (sale en el ticket)',
+  })
+  @IsOptional() @IsString() @MaxLength(160)
+  description?: string;
 }
 
 export class SalePaymentDto {
@@ -94,9 +100,16 @@ export class CreateSaleDto {
   @IsOptional() @IsString() @MaxLength(64)
   idempotencyKey?: string;
 
-  @ApiPropertyOptional({ description: 'Vender bajo cero. Exige inventory.allow_negative' })
+  @ApiPropertyOptional({
+    description:
+      'Vender bajo cero aunque la tienda no lo permita. Exige inventory.allow_negative',
+  })
   @IsOptional() @IsBoolean()
   allowNegativeStock?: boolean;
+
+  @ApiPropertyOptional({ description: 'Venta de mayoreo (F11): precios de la lista de mayoreo' })
+  @IsOptional() @IsBoolean()
+  wholesale?: boolean;
 }
 
 export class CancelSaleDto {

@@ -8,6 +8,8 @@ import { InventoryScreen } from './screens/Inventory';
 import { PriceListsScreen } from './screens/PriceLists';
 import { ProductsScreen } from './screens/Products';
 import { PurchasesScreen } from './screens/Purchases';
+import { ReportsScreen } from './screens/Reports';
+import { SettingsScreen } from './screens/Settings';
 import { SupportScreen } from './screens/Support';
 import { UsersScreen } from './screens/Users';
 
@@ -45,8 +47,10 @@ const SECTIONS: Section[] = [
   { id: 'clientes', label: 'Clientes', icon: 'users', permission: 'customer.view', render: (p) => <CustomersScreen {...p} /> },
   { id: 'compras', label: 'Compras', icon: 'truck', permission: 'purchase.view', render: (p) => <PurchasesScreen {...p} /> },
   { id: 'precios', label: 'Listas de precios', icon: 'tag', permission: 'pricing.view', render: (p) => <PriceListsScreen {...p} /> },
+  { id: 'reportes', label: 'Reportes', icon: 'chart', permission: 'report.sales', render: (p) => <ReportsScreen {...p} /> },
   { id: 'cortes', label: 'Cortes de caja', icon: 'cash', permission: 'cash.report.z', render: (p) => <CashSessionsScreen {...p} /> },
   { id: 'usuarios', label: 'Usuarios', icon: 'user', permission: 'user.view', render: (p) => <UsersScreen {...p} /> },
+  { id: 'configuracion', label: 'Configuración', icon: 'settings', permission: 'settings.view', render: (p) => <SettingsScreen {...p} /> },
   { id: 'soporte', label: 'Soporte', icon: 'help', permission: 'support.manage', render: (p) => <SupportScreen {...p} /> },
 ];
 

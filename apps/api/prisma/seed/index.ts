@@ -5,6 +5,7 @@ import * as argon2 from 'argon2';
 import { v7 as uuidv7 } from 'uuid';
 import {
   ALL_PERMISSIONS,
+  PERMISSION_NAMES,
   ROLE_DEFINITIONS,
   SENSITIVE_PERMISSIONS,
   permissionGroupOf,
@@ -148,28 +149,10 @@ async function seedSatCatalogs() {
 //  Permisos y roles
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Nombre legible a partir del código: 'product.cost.view' → 'Ver costo'. */
-const PERMISSION_NAMES: Record<string, string> = {
-  'product.cost.view': 'Ver el costo de los productos',
-  'product.price.update': 'Cambiar precios',
-  'inventory.adjust': 'Ajustar existencias manualmente',
-  'inventory.allow_negative': 'Vender por debajo de cero',
-  'sale.discount.unlimited': 'Aplicar descuentos sin límite',
-  'sale.price_override': 'Cambiar el precio en el ticket',
-  'sale.cancel': 'Cancelar ventas',
-  'return.refund_cash': 'Devolver dinero en efectivo',
-  'return.override_window': 'Aceptar devoluciones fuera de plazo',
-  'cash.close_with_difference': 'Cerrar caja con diferencia',
-  'report.profit': 'Ver reportes de utilidad',
-  'user.manage': 'Administrar usuarios',
-  'role.manage': 'Administrar roles y permisos',
-  'backup.manage': 'Administrar respaldos',
-  'fiscal.stamp': 'Timbrar facturas',
-  'fiscal.cancel': 'Cancelar facturas',
-};
-
+/** Nombre legible a partir del código; el catálogo en español manda. */
 function humanize(code: string): string {
-  if (PERMISSION_NAMES[code]) return PERMISSION_NAMES[code]!;
+  const known = (PERMISSION_NAMES as Record<string, string>)[code];
+  if (known) return known;
   const parts = code.split('.');
   const action = parts[parts.length - 1] ?? '';
   const resource = parts.slice(0, -1).join(' ');

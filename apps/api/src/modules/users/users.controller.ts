@@ -3,7 +3,13 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS, type AuthenticatedUser } from '@pv/shared-types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequirePermission } from '../auth/decorators/permissions.decorator';
-import { CreateUserDto, ListUsersDto, UpdateUserDto, UpdateUserRolesDto } from './dto/users.dto';
+import {
+  CreateUserDto,
+  ListUsersDto,
+  UpdateUserDto,
+  UpdateUserPermissionsDto,
+  UpdateUserRolesDto,
+} from './dto/users.dto';
 import { UsersService } from './users.service';
 
 /**
@@ -69,6 +75,17 @@ export class UsersController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.users.updateRoles(id, dto.roleCodes, actor);
+  }
+
+  @Patch(':id/permissions')
+  @RequirePermission(PERMISSIONS.USER_MANAGE)
+  @ApiOperation({ summary: 'Fijar los permisos efectivos de un usuario (rol + excepciones)' })
+  updatePermissions(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserPermissionsDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.users.updatePermissions(id, dto.permissions, actor);
   }
 
   @Post(':id/archive')

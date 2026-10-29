@@ -553,6 +553,7 @@ model User {
   version        Int        @default(1)
 
   userRoles    UserRole[]
+  userPermissions UserPermission[]
   userBranches UserBranch[]
   sessions     Session[]
   auditLogs    AuditLog[]         @relation("AuditActor")
@@ -595,9 +596,27 @@ model Permission {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   rolePermissions RolePermission[]
+  userPermissions UserPermission[]
 
   @@index([group])
   @@map("permissions")
+}
+
+/// Excepciones por persona sobre los permisos de su rol: `granted = true`
+/// otorga un permiso que el rol no trae; `false` lo retira.
+model UserPermission {
+  userId       String   @map("user_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  granted      Boolean
+  grantedAt    DateTime @default(now()) @map("granted_at") @db.Timestamptz(6)
+  grantedById  String?  @map("granted_by_id") @db.Uuid
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@index([permissionId])
+  @@map("user_permissions")
 }
 
 model RolePermission {

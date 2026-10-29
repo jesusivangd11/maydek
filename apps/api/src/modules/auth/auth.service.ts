@@ -453,6 +453,7 @@ export class AuthService {
             },
           },
         },
+        userPermissions: { include: { permission: { select: { code: true } } } },
         userBranches: { select: { branchId: true } },
       },
     });
@@ -465,6 +466,12 @@ export class AuthService {
       for (const rp of userRole.role.rolePermissions) {
         permissions.add(rp.permission.code as PermissionCode);
       }
+    }
+    // Excepciones de la persona sobre su rol: otorgados y retirados.
+    for (const up of user.userPermissions) {
+      const code = up.permission.code as PermissionCode;
+      if (up.granted) permissions.add(code);
+      else permissions.delete(code);
     }
 
     return {

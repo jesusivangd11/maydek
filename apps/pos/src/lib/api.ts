@@ -372,6 +372,7 @@ export interface ProductVariantRow {
   nameSuffix: string | null;
   barcode?: string | null;
   basePrice: string;
+  wholesalePrice?: string | null;
   minStock: string | null;
   isActive: boolean;
   cost?: string;
@@ -416,11 +417,23 @@ export interface ProductInput {
   barcode?: string;
   basePrice?: string;
   minStock?: string;
+  cost?: string;
+  wholesalePrice?: string;
+  initialStock?: string;
   categoryId?: string;
   unitId?: string;
   taxRateId?: string;
   trackStock?: boolean;
-  variants?: { sku: string; nameSuffix?: string; basePrice?: string; minStock?: string; barcode?: string }[];
+  variants?: {
+    sku: string;
+    nameSuffix?: string;
+    basePrice?: string;
+    minStock?: string;
+    barcode?: string;
+    cost?: string;
+    wholesalePrice?: string;
+    initialStock?: string;
+  }[];
 }
 
 export interface CatalogOptions {
@@ -579,6 +592,75 @@ export interface SaleLineInput {
   unitPrice?: string;
   discountAmount?: string;
   discountReason?: string;
+  /** Solo en el producto común: lo que escribió el cajero. */
+  description?: string;
+}
+
+/** Configuración de la tienda (claves del servidor, valores ya tipados). */
+export interface StoreSettings {
+  'business.name': string;
+  'business.legalName': string;
+  'business.rfc': string;
+  'business.address': string;
+  'business.phone': string;
+  'business.email': string;
+  'ticket.header': string;
+  'ticket.footer': string;
+  'ticket.paper': '58' | '80';
+  'ticket.showSku': boolean;
+  'ticket.showCashier': boolean;
+  'ticket.showCustomer': boolean;
+  'ticket.showSavings': boolean;
+  'ticket.autoPrint': boolean;
+  'ticket.copies': number;
+  'sales.allowNegativeStock': boolean;
+  'sales.wholesalePriceListId': string;
+  'sales.confirmRemove': boolean;
+}
+
+export interface CommonItem {
+  variantId: string;
+  sku: string;
+  taxRate: string;
+}
+
+export interface SalesReport {
+  range: { from: string; to: string; timezone: string };
+  summary: { count: number; cancelled: number; total: string; averageTicket: string; profit?: string };
+  data: {
+    id: string;
+    folio: string;
+    occurredAt: string;
+    status: string;
+    cashier: string;
+    customer: string | null;
+    items: string;
+    total: string;
+    methods: string;
+    wholesale: boolean;
+    profit?: string;
+  }[];
+}
+
+export interface InventoryReport {
+  summary: { products: number; negative: number; out: number; low: number; value?: string };
+  data: {
+    variantId: string;
+    sku: string;
+    name: string;
+    category: string | null;
+    qty: string;
+    minStock: string | null;
+    price: string;
+    status: 'NEGATIVE' | 'OUT' | 'LOW' | 'OK';
+    cost?: string;
+    value?: string;
+  }[];
+}
+
+export interface PermissionGroup {
+  group: string;
+  permissions: { code: string; name: string; description: string | null; isSensitive: boolean }[];
 }
 
 export interface SalePaymentInput {
@@ -615,10 +697,24 @@ export const api = {
     }),
 
   // ── Catálogo ──
-  posSearch: (params: { q?: string; categoryId?: string; limit?: number; customerId?: string }) =>
+  posSearch: (params: {
+    q?: string;
+    categoryId?: string;
+    limit?: number;
+    customerId?: string;
+    wholesale?: boolean;
+  }) =>
     request<{ exactBarcode: boolean; warehouseId: string; data: CatalogItem[] }>(
       `/pos/search${toQuery(params)}`,
     ),
+
+  commonItem: () => request<CommonItem>('/pos/common-item'),
+
+  // ── Configuración ──
+  getSettings: () => request<StoreSettings>('/settings'),
+
+  saveSettings: (values: Partial<StoreSettings>) =>
+    request<StoreSettings>('/settings', { method: 'PUT', body: { values } }),
 
   listCategories: (includeInactive = false) =>
     request<Category[]>(`/categories${toQuery({ includeInactive: includeInactive || undefined })}`),
@@ -652,7 +748,15 @@ export const api = {
 
   updateVariant: (
     id: string,
-    body: { sku?: string; nameSuffix?: string; basePrice?: string; minStock?: string; barcode?: string; isActive?: boolean },
+    body: {
+      sku?: string;
+      nameSuffix?: string;
+      basePrice?: string;
+      wholesalePrice?: string;
+      minStock?: string;
+      barcode?: string;
+      isActive?: boolean;
+    },
   ) => request<ProductDetail>(`/variants/${id}`, { method: 'PATCH', body }),
 
   // ── Clientes ──
@@ -712,6 +816,7 @@ export const api = {
     customerId?: string;
     notes?: string;
     idempotencyKey?: string;
+    wholesale?: boolean;
   }) => request<SaleDetail>('/sales', { method: 'POST', body }),
 
   listSales: (params: {
@@ -827,6 +932,17 @@ export const api = {
   productSales: (params: { from?: string; to?: string }) =>
     request<Dashboard['topProducts']>(`/reports/product-sales${toQuery(params)}`),
 
+  salesReport: (params: { from?: string; to?: string; userId?: string }) =>
+    request<SalesReport>(`/reports/sales${toQuery(params)}`),
+
+  wholesaleReport: (params: { from?: string; to?: string }) =>
+    request<SalesReport & { products: { sku: string; name: string; qty: string; total: string }[] }>(
+      `/reports/wholesale-sales${toQuery(params)}`,
+    ),
+
+  inventoryReport: (filter: 'all' | 'negative' | 'out' | 'low' = 'all') =>
+    request<InventoryReport>(`/reports/inventory${toQuery({ filter })}`),
+
   inventoryValuation: () =>
     request<{ sku: string; name: string; category: string | null; qty: string; avgCost: string; value: string; price: string }[]>(
       '/reports/inventory-valuation',
@@ -845,8 +961,14 @@ export const api = {
     request<{ id: string; code: string; name: string; permissions: string[] }[]>('/users/roles'),
   createUser: (body: { email: string; name: string; password: string; pin?: string; phone?: string; roleCodes: string[]; mustChangePassword?: boolean }) =>
     request<UserRow>('/users', { method: 'POST', body }),
-  updateUser: (id: string, body: { name?: string; phone?: string; status?: string }) =>
-    request<UserRow>(`/users/${id}`, { method: 'PATCH', body }),
+  updateUser: (
+    id: string,
+    body: { name?: string; phone?: string; status?: string; password?: string; pin?: string },
+  ) => request<UserRow>(`/users/${id}`, { method: 'PATCH', body }),
+  getUser: (id: string) => request<UserRow & { permissions: string[] }>(`/users/${id}`),
+  listPermissions: () => request<PermissionGroup[]>('/users/permissions'),
+  setUserPermissions: (id: string, permissions: string[]) =>
+    request<unknown>(`/users/${id}/permissions`, { method: 'PATCH', body: { permissions } }),
   setUserRoles: (id: string, roleCodes: string[]) =>
     request<unknown>(`/users/${id}/roles`, { method: 'PATCH', body: { roleCodes } }),
   archiveUser: (id: string) => request<unknown>(`/users/${id}/archive`, { method: 'POST' }),

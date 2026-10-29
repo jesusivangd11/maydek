@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogItem } from './api';
 import {
+  addCommonItem,
   applyGlobalDiscount,
   addToCart,
   cartTotals,
-  isAtMax,
   lineTotal,
-  maxQtyFor,
+  overstockedLines,
   removeLine,
+  reprice,
   setDiscount,
   setQty,
   syncAvailability,
@@ -73,9 +74,21 @@ describe('agregar al ticket', () => {
     expect(lines).toHaveLength(2);
   });
 
-  it('no abre renglón de un artículo agotado', () => {
+  it('un artículo en cero SÍ se vende: el inventario queda en negativo', () => {
     const lines = addToCart([], item({ qtyAvailable: '0.000', isOut: true }));
-    expect(lines).toHaveLength(0);
+    expect(lines).toHaveLength(1);
+    expect(overstockedLines(lines)).toHaveLength(1);
+  });
+
+  it('el producto común abre un renglón por cada uno, con su precio', () => {
+    const common = { variantId: 'comun', sku: 'COMUN', taxRate: '0.16' };
+    let lines = addCommonItem([], common, { description: 'Bolsa', unitPrice: 5, qty: 2 });
+    lines = addCommonItem(lines, common, { description: 'Hilo', unitPrice: 12, qty: 1 });
+
+    expect(lines).toHaveLength(2);
+    expect(cartTotals(lines).total).toBe(22);
+    const payload = toSaleLines(lines);
+    expect(payload[0]).toMatchObject({ variantId: 'comun', unitPrice: '5.00', description: 'Bolsa' });
   });
 
   it('un servicio sin existencia sí entra: no lleva inventario', () => {
@@ -101,26 +114,16 @@ describe('cantidades', () => {
     expect(removeLine(addToCart([], item()), 'v1')).toHaveLength(0);
   });
 
-  // Prueba 12 del plan, en el cliente: no se puede pasar de la existencia.
-  it('topa la cantidad en lo disponible', () => {
+  it('la existencia no topa la cantidad, solo avisa', () => {
     const lines = setQty(addToCart([], item({ qtyAvailable: '3.000' })), 'v1', 99);
 
-    expect(lines[0]!.qty).toBe(3);
-    expect(isAtMax(lines[0]!)).toBe(true);
+    expect(lines[0]!.qty).toBe(99);
+    expect(overstockedLines(lines)).toHaveLength(1);
   });
 
-  it('agregar repetidamente tampoco rebasa la existencia', () => {
-    let lines = addToCart([], item({ qtyAvailable: '2.000' }));
-    for (let i = 0; i < 10; i++) lines = addToCart(lines, item({ qtyAvailable: '2.000' }));
-
-    expect(lines[0]!.qty).toBe(2);
-  });
-
-  it('un servicio no tiene tope', () => {
+  it('un servicio nunca se marca como faltante', () => {
     const lines = setQty(addToCart([], item({ trackStock: false })), 'v1', 500);
-
-    expect(maxQtyFor(lines[0]!)).toBe(Number.POSITIVE_INFINITY);
-    expect(lines[0]!.qty).toBe(500);
+    expect(overstockedLines(lines)).toHaveLength(0);
   });
 });
 
@@ -163,12 +166,18 @@ describe('totales', () => {
 });
 
 describe('sincronizar con el servidor', () => {
-  it('baja la cantidad si otra caja se llevó las piezas', () => {
+  it('actualiza la existencia sin tocar la cantidad capturada', () => {
     const lines = setQty(addToCart([], item({ qtyAvailable: '10.000' })), 'v1', 8);
     const synced = syncAvailability(lines, [item({ qtyAvailable: '3.000' })]);
 
     expect(synced[0]!.available).toBe(3);
-    expect(synced[0]!.qty).toBe(3);
+    expect(synced[0]!.qty).toBe(8);
+  });
+
+  it('el mayoreo cambia el precio de los renglones del catálogo', () => {
+    const lines = addToCart([], item());
+    const repriced = reprice(lines, [item({ unitPrice: '500.0000' })]);
+    expect(repriced[0]!.unitPrice).toBe(500);
   });
 
   it('deja intactos los renglones que no vienen en la respuesta', () => {
@@ -201,6 +210,7 @@ describe('contrato con el API', () => {
 
 describe('applyGlobalDiscount', () => {
   const base = (variantId: string, unitPrice: number, qty: number) => ({
+    key: variantId,
     variantId,
     sku: variantId,
     name: variantId,

@@ -505,7 +505,8 @@ function buildMenu() {
           accelerator: 'CmdOrCtrl+R',
           click: (_item, win) => win?.webContents.reload(),
         },
-        { label: 'Pantalla completa', role: 'togglefullscreen' },
+        // F11 es «Mayoreo» en la caja: la pantalla completa no puede quedárselo.
+        { label: 'Pantalla completa', role: 'togglefullscreen', accelerator: 'CmdOrCtrl+Shift+F' },
         { label: 'Acercar', role: 'zoomIn' },
         { label: 'Alejar', role: 'zoomOut' },
         { label: 'Tamaño normal', role: 'resetZoom' },

@@ -24,7 +24,10 @@ export function UsersScreen({ user }: ScreenProps) {
   const users = useLoad(() => api.listUsers(), []);
   const roles = useLoad(() => api.listRoles(), []);
   const [editing, setEditing] = useState<UserRow | 'new' | null>(null);
+  const [privileges, setPrivileges] = useState<UserRow | null>(null);
   const canManage = can(user.permissions, 'user.manage');
+  // El catálogo de permisos se consulta con role.manage.
+  const canRoles = can(user.permissions, 'role.manage');
 
   return (
     <div className="page">
@@ -77,6 +80,11 @@ export function UsersScreen({ user }: ScreenProps) {
                         Editar
                       </Button>
                     )}
+                    {canManage && canRoles && (
+                      <Button size="sm" variant="subtle" icon="settings" onClick={() => setPrivileges(u)}>
+                        Privilegios
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -110,7 +118,112 @@ export function UsersScreen({ user }: ScreenProps) {
           }}
         />
       )}
+
+      {privileges && (
+        <PrivilegesDialog
+          target={privileges}
+          self={privileges.id === user.id}
+          onClose={() => setPrivileges(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Privilegios de una persona, casilla por casilla.
+ *
+ * Parte de lo que le da su rol; lo que se marque o desmarque aquí queda como
+ * excepción solo para ella (a un cajero se le puede dejar hacer descuentos sin
+ * convertirlo en gerente).
+ */
+function PrivilegesDialog({ target, self, onClose }: { target: UserRow; self: boolean; onClose: () => void }) {
+  const catalog = useLoad(() => api.listPermissions(), []);
+  const detail = useLoad(() => api.getUser(target.id), [target.id]);
+  const [granted, setGranted] = useState<Set<string> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const current = granted ?? (detail.data ? new Set(detail.data.permissions) : null);
+
+  async function save() {
+    if (!current) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.setUserPermissions(target.id, [...current]);
+      setSaved(true);
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const flip = (code: string, on: boolean) => {
+    const next = new Set(current ?? []);
+    if (on) next.add(code);
+    else next.delete(code);
+    setGranted(next);
+    setSaved(false);
+  };
+
+  return (
+    <Modal
+      label="Privilegios"
+      wide
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      head={
+        <>
+          <h2 className="modal__title">Privilegios · {target.name}</h2>
+          <Button variant="subtle" icon="close" onClick={onClose}>
+            Cerrar
+          </Button>
+        </>
+      }
+      foot={
+        <div className="modal__actions">
+          {saved && <span className="flag flag--positive">Guardado</span>}
+          <Button variant="subtle" onClick={onClose}>
+            Cerrar
+          </Button>
+          <Button variant="primary" disabled={busy || !current || !granted} onClick={save}>
+            {busy ? 'Guardando…' : 'Guardar privilegios'}
+          </Button>
+        </div>
+      }
+    >
+      <p className="field__hint">
+        Roles: {target.roles.map((r) => r.name).join(', ')}. Lo que cambies aquí aplica solo a esta persona y
+        surte efecto en su siguiente acción.
+      </p>
+      {(catalog.error || detail.error) && <Alert>{catalog.error ?? detail.error}</Alert>}
+      {error && <Alert>{error}</Alert>}
+      {catalog.data && current && (
+        <div className="perm-groups">
+          {catalog.data.map((group) => (
+            <fieldset key={group.group} className="perm-group">
+              <legend className="field__label">{group.group}</legend>
+              {group.permissions.map((p) => (
+                <label key={p.code} className="check" title={p.code}>
+                  <input
+                    type="checkbox"
+                    checked={current.has(p.code)}
+                    disabled={self && p.code === 'user.manage'}
+                    onChange={(e) => flip(p.code, e.target.checked)}
+                  />
+                  <span>
+                    {p.name}
+                    {p.isSensitive && <span className="flag flag--accent perm-sensitive">Sensible</span>}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          ))}
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -141,7 +254,12 @@ function UserDialog({
     setError(null);
     try {
       if (target) {
-        await api.updateUser(target.id, { name, phone: phone || undefined });
+        await api.updateUser(target.id, {
+          name,
+          phone: phone || undefined,
+          ...(password ? { password } : {}),
+          ...(pin ? { pin } : {}),
+        });
         await api.setUserRoles(target.id, selected);
       } else {
         await api.createUser({
@@ -175,7 +293,12 @@ function UserDialog({
     }
   }
 
-  const invalid = name.trim().length < 2 || selected.length === 0 || (!target && (!email.includes('@') || password.length < 10));
+  const invalid =
+    name.trim().length < 2 ||
+    selected.length === 0 ||
+    (!target && (!email.includes('@') || password.length < 10)) ||
+    (Boolean(target) && password.length > 0 && password.length < 10) ||
+    (pin.length > 0 && pin.length < 4);
 
   return (
     <Modal
@@ -212,16 +335,24 @@ function UserDialog({
         <Field label="Teléfono" htmlFor="u-phone">
           <TextInput id="u-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
-        {!target && (
-          <>
-            <Field label="Contraseña inicial" htmlFor="u-pass" hint="Mínimo 10 caracteres. Se le pedirá cambiarla al entrar.">
-              <TextInput id="u-pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </Field>
-            <Field label="PIN de autorización (opcional)" htmlFor="u-pin" hint="4 a 8 dígitos, para supervisores.">
-              <TextInput id="u-pin" type="password" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
-            </Field>
-          </>
-        )}
+        <Field
+          label={target ? 'Nueva contraseña (opcional)' : 'Contraseña inicial'}
+          htmlFor="u-pass"
+          hint={
+            target
+              ? 'Déjala vacía para no cambiarla. Si la cambias, se le pedirá una propia al entrar.'
+              : 'Mínimo 10 caracteres. Se le pedirá cambiarla al entrar.'
+          }
+        >
+          <TextInput id="u-pass" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Field>
+        <Field
+          label={target ? 'Nuevo PIN (opcional)' : 'PIN de autorización (opcional)'}
+          htmlFor="u-pin"
+          hint="4 a 8 dígitos, para autorizar en caja."
+        >
+          <TextInput id="u-pin" type="password" autoComplete="off" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+        </Field>
       </div>
       <fieldset className="role-picker">
         <legend className="field__label">Roles</legend>

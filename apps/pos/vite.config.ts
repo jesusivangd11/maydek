@@ -18,6 +18,19 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      /**
+       * La caja abre en su misma ventana los módulos de la trastienda
+       * (Clientes, Productos, Inventario, Reportes, Configuración…), que viven
+       * en el panel. Esas pantallas importan el sistema de diseño como `@pos`,
+       * así que aquí ese alias apunta a este mismo proyecto.
+       */
+      alias: {
+        '@pos': path.resolve(__dirname, 'src'),
+        '@admin': path.resolve(__dirname, '..', 'admin', 'src'),
+      },
+      dedupe: ['react', 'react-dom'],
+    },
     server: { port: 5174, strictPort: true },
     define: {
       'import.meta.env.VITE_API_URL': JSON.stringify(

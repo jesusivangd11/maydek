@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -9,6 +9,7 @@ import {
   IsString,
   IsUUID,
   Length,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -27,6 +28,10 @@ export class PosSearchDto {
   @ApiPropertyOptional({ description: 'Precios con la lista del cliente (mayoreo…)' })
   @IsOptional() @IsUUID()
   customerId?: string;
+
+  @ApiPropertyOptional({ description: 'Precios de mayoreo (tecla F11)' })
+  @IsOptional() @Transform(({ value }) => value === true || value === 'true') @IsBoolean()
+  wholesale?: boolean;
 
   @ApiPropertyOptional({ default: 25 })
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(50)
@@ -54,6 +59,12 @@ export class ProductVariantDto {
   @ApiPropertyOptional() @IsOptional() @IsNumberString() basePrice?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() minStock?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) barcode?: string;
+  @ApiPropertyOptional({ description: 'Costo de compra por pieza' })
+  @IsOptional() @IsNumberString() cost?: string;
+  @ApiPropertyOptional({ description: 'Precio de mayoreo' })
+  @IsOptional() @IsNumberString() wholesalePrice?: string;
+  @ApiPropertyOptional({ description: 'Existencia con la que arranca' })
+  @IsOptional() @IsNumberString() initialStock?: string;
 }
 
 export class CreateProductDto {
@@ -68,6 +79,12 @@ export class CreateProductDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) barcode?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() basePrice?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() minStock?: string;
+  @ApiPropertyOptional({ description: 'Costo de compra por pieza' })
+  @IsOptional() @IsNumberString() cost?: string;
+  @ApiPropertyOptional({ description: 'Precio de mayoreo' })
+  @IsOptional() @IsNumberString() wholesalePrice?: string;
+  @ApiPropertyOptional({ description: 'Existencia con la que arranca' })
+  @IsOptional() @IsNumberString() initialStock?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsUUID() categoryId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() brandId?: string;
@@ -94,12 +111,16 @@ export class UpdateProductDto {
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() basePrice?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() minStock?: string;
+  @ApiPropertyOptional({ description: 'Precio de mayoreo; vacío lo quita' })
+  @IsOptional() @IsString() @Matches(/^$|^\d+(\.\d+)?$/) wholesalePrice?: string;
 }
 
 export class UpdateVariantDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @Length(1, 64) sku?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(120) nameSuffix?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() basePrice?: string;
+  @ApiPropertyOptional({ description: 'Precio de mayoreo; vacío lo quita' })
+  @IsOptional() @IsString() @Matches(/^$|^\d+(\.\d+)?$/) wholesalePrice?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() minStock?: string;
   @ApiPropertyOptional({ description: 'Reemplaza el código de barras principal' })
   @IsOptional() @IsString() @MaxLength(64)

@@ -246,7 +246,7 @@
   height: 34px;
   padding: 0 var(--s-4);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text-2);
   font-size: var(--text-base);

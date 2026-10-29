@@ -27,6 +27,9 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/ui.css';
 import './styles/screens.css';
+// Módulos de la trastienda que la caja abre en su propia ventana.
+import '@admin/admin.css';
+import './styles/venta.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

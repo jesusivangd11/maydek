@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, StockCondition } from '@prisma/client';
+import {
+  MovementDirection,
+  MovementType,
+  Prisma,
+  ReferenceType,
+  StockCondition,
+} from '@prisma/client';
 import { money, toMoney } from '@pv/domain-rules';
 import { PERMISSIONS, type AuthenticatedUser } from '@pv/shared-types';
 import { AuditService } from '../../core/audit/audit.service';
@@ -15,7 +21,8 @@ import type {
   UpdateProductDto,
   UpdateVariantDto,
 } from './dto/catalog.dto';
-import { PricingService } from './pricing.service';
+import { StockPostingService } from '../inventory/stock-posting.service';
+import { COMMON_ITEM_SKU, PricingService } from './pricing.service';
 
 /**
  * Catálogo.
@@ -36,7 +43,61 @@ export class CatalogService {
     private readonly pricing: PricingService,
     private readonly posContext: PosContextService,
     private readonly audit: AuditService,
+    private readonly stock: StockPostingService,
   ) {}
+
+  /**
+   * El artículo de sistema detrás del «producto común»: la venta rápida de
+   * algo que no está dado de alta. Cada renglón lleva su propia descripción y
+   * precio; el artículo solo existe para que el ticket tenga a qué apuntar.
+   * No lleva inventario. Se crea la primera vez que se pide.
+   */
+  async commonItem() {
+    const select = {
+      id: true,
+      sku: true,
+      product: { select: { taxRate: { select: { rate: true } } } },
+    } as const;
+
+    let variant = await this.prisma.client.productVariant.findFirst({
+      where: { sku: COMMON_ITEM_SKU, deletedAt: null },
+      select,
+    });
+
+    if (!variant) {
+      const variantId = newId();
+      await this.prisma.transaction(async (tx) => {
+        await tx.product.create({
+          data: {
+            id: newId(),
+            name: 'Producto común',
+            description: 'Venta de artículos sin registrar. La descripción la escribe el cajero.',
+            skuBase: COMMON_ITEM_SKU,
+            trackStock: false,
+            isActive: true,
+            variants: {
+              create: [{ id: variantId, sku: COMMON_ITEM_SKU, basePrice: '0', position: 0 }],
+            },
+          },
+        });
+      });
+      variant = await this.prisma.client.productVariant.findFirstOrThrow({
+        where: { id: variantId },
+        select,
+      });
+    }
+
+    const defaultTax = await this.prisma.client.taxRate.findFirst({
+      where: { isDefault: true, isActive: true },
+      select: { rate: true },
+    });
+
+    return {
+      variantId: variant.id,
+      sku: variant.sku,
+      taxRate: (variant.product.taxRate?.rate ?? defaultTax?.rate)?.toString() ?? '0',
+    };
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   //  BÚSQUEDA DEL POS
@@ -62,6 +123,8 @@ export class CatalogService {
     const baseWhere: Prisma.ProductVariantWhereInput = {
       deletedAt: null,
       isActive: true,
+      // El producto común se vende con su propio botón (Ctrl+P), no buscándolo.
+      NOT: { sku: COMMON_ITEM_SKU },
       product: {
         isActive: true,
         deletedAt: null,
@@ -104,6 +167,7 @@ export class CatalogService {
     }
 
     // Con cliente elegido, sus precios: el mayorista ve SU precio en la tarjeta.
+    // Con mayoreo activado (F11), la lista de mayoreo manda sobre todo lo demás.
     const customer = query.customerId
       ? await this.prisma.client.customer.findFirst({
           where: { id: query.customerId, deletedAt: null },
@@ -113,7 +177,9 @@ export class CatalogService {
 
     const prices = await this.pricing.resolveMany({
       variantIds: variants.map((v) => v.id),
-      priceListId: customer?.priceListId ?? ctx.priceListId,
+      priceListId: query.wholesale
+        ? await this.pricing.wholesalePriceListId()
+        : (customer?.priceListId ?? ctx.priceListId),
     });
 
     const showCost = actor.permissions.includes(PERMISSIONS.PRODUCT_COST_VIEW);
@@ -210,6 +276,8 @@ export class CatalogService {
 
     const where: Prisma.ProductWhereInput = {
       deletedAt: null,
+      // El producto común es de sistema: no se edita ni se cuenta.
+      AND: [{ OR: [{ skuBase: null }, { skuBase: { not: COMMON_ITEM_SKU } }] }],
       ...(query.includeInactive ? {} : { isActive: true }),
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(query.search
@@ -260,6 +328,9 @@ export class CatalogService {
     const hasMore = products.length > limit;
     const page = hasMore ? products.slice(0, limit) : products;
     const showCost = actor.permissions.includes(PERMISSIONS.PRODUCT_COST_VIEW);
+    const wholesale = await this.pricing.wholesalePrices(
+      page.flatMap((p) => p.variants.map((v) => v.id)),
+    );
 
     return {
       data: page.map((product) => ({
@@ -280,6 +351,7 @@ export class CatalogService {
           nameSuffix: v.nameSuffix,
           barcode: v.barcodes[0]?.code ?? null,
           basePrice: v.basePrice.toString(),
+          wholesalePrice: wholesale.get(v.id) ?? null,
           minStock: v.minStock?.toString() ?? null,
           isActive: v.isActive,
           ...(showCost ? { cost: v.cost.toString() } : {}),
@@ -314,6 +386,7 @@ export class CatalogService {
     if (!product) throw new NotFoundError('el producto', id);
 
     const showCost = actor.permissions.includes(PERMISSIONS.PRODUCT_COST_VIEW);
+    const wholesale = await this.pricing.wholesalePrices(product.variants.map((v) => v.id));
 
     return {
       id: product.id,
@@ -333,6 +406,7 @@ export class CatalogService {
         sku: v.sku,
         nameSuffix: v.nameSuffix,
         basePrice: v.basePrice.toString(),
+        wholesalePrice: wholesale.get(v.id) ?? null,
         minStock: v.minStock?.toString() ?? null,
         isActive: v.isActive,
         imageUrl: v.imageUrl,
@@ -356,6 +430,12 @@ export class CatalogService {
    * el implícito con el SKU base: así todo lo que se vende tiene la misma forma.
    */
   async createProduct(dto: CreateProductDto, actor: AuthenticatedUser) {
+    // Existencia inicial: entra al almacén de la sucursal de quien da de alta.
+    const wantsStock =
+      (dto.variants ?? []).some((v) => v.initialStock && Number(v.initialStock) > 0) ||
+      (!!dto.initialStock && Number(dto.initialStock) > 0);
+    const ctx = wantsStock ? await this.posContext.resolve(actor, {}) : null;
+
     return this.prisma.transaction(async (tx) => {
       const skus = (dto.variants ?? []).map((v) => v.sku);
       if (dto.sku) skus.push(dto.sku);
@@ -379,6 +459,7 @@ export class CatalogService {
             sku: v.sku,
             nameSuffix: v.nameSuffix ?? null,
             basePrice: toMoney(v.basePrice ?? '0').toFixed(4),
+            cost: toMoney(v.cost ?? '0').toFixed(4),
             minStock: v.minStock ?? null,
             position: index,
           }))
@@ -388,10 +469,20 @@ export class CatalogService {
               sku: dto.sku!,
               nameSuffix: null,
               basePrice: toMoney(dto.basePrice ?? '0').toFixed(4),
+              cost: toMoney(dto.cost ?? '0').toFixed(4),
               minStock: dto.minStock ?? null,
               position: 0,
             },
           ];
+
+      // Lo que se captura en la misma pantalla del alta, renglón por variante.
+      const extras = hasVariants
+        ? dto.variants!.map((v) => ({
+            wholesalePrice: v.wholesalePrice,
+            initialStock: v.initialStock,
+            cost: v.cost,
+          }))
+        : [{ wholesalePrice: dto.wholesalePrice, initialStock: dto.initialStock, cost: dto.cost }];
 
       await tx.product.create({
         data: {
@@ -429,6 +520,38 @@ export class CatalogService {
         }
         await tx.barcode.create({
           data: { id: newId(), variantId: pair.variantId, code: pair.code, isPrimary: true },
+        });
+      }
+
+      // Precio de mayoreo y existencia inicial, en la misma transacción: el
+      // producto nace completo o no nace.
+      const stockLines = [];
+      for (const [i, extra] of extras.entries()) {
+        const variant = variantsData[i]!;
+        if (extra.wholesalePrice) {
+          await this.pricing.setWholesalePrice(variant.id, extra.wholesalePrice);
+        }
+        if (ctx && (dto.trackStock ?? true) && extra.initialStock && Number(extra.initialStock) > 0) {
+          stockLines.push({
+            variantId: variant.id,
+            warehouseId: ctx.warehouseId,
+            qty: extra.initialStock,
+            unitCost: extra.cost ?? '0',
+            sku: variant.sku,
+            name: dto.name,
+          });
+        }
+      }
+      if (stockLines.length > 0) {
+        await this.stock.post({
+          movementType: MovementType.INITIAL_LOAD,
+          direction: MovementDirection.IN,
+          referenceType: ReferenceType.MANUAL,
+          referenceId: productId,
+          referenceFolio: 'ALTA',
+          userId: actor.id,
+          notes: 'Existencia inicial capturada en el alta del producto',
+          lines: stockLines,
         });
       }
 
@@ -495,7 +618,7 @@ export class CatalogService {
     if (!variant) throw new NotFoundError('el artículo', variantId);
 
     if (
-      dto.basePrice !== undefined &&
+      (dto.basePrice !== undefined || dto.wholesalePrice !== undefined) &&
       !actor.permissions.includes(PERMISSIONS.PRODUCT_PRICE_UPDATE)
     ) {
       throw new ForbiddenError('No tienes permiso para cambiar precios', {
@@ -524,6 +647,9 @@ export class CatalogService {
       });
 
       if (dto.barcode !== undefined) await this.replaceBarcode(tx, variantId, dto.barcode);
+      if (dto.wholesalePrice !== undefined) {
+        await this.pricing.setWholesalePrice(variantId, dto.wholesalePrice || null);
+      }
 
       await this.audit.record({
         action: 'product.variant.update',
@@ -567,7 +693,10 @@ export class CatalogService {
   }
 
   async updateProduct(id: string, dto: UpdateProductDto, actor: AuthenticatedUser) {
-    if (dto.basePrice !== undefined && !actor.permissions.includes(PERMISSIONS.PRODUCT_PRICE_UPDATE)) {
+    if (
+      (dto.basePrice !== undefined || dto.wholesalePrice !== undefined) &&
+      !actor.permissions.includes(PERMISSIONS.PRODUCT_PRICE_UPDATE)
+    ) {
       throw new ForbiddenError('No tienes permiso para cambiar precios', {
         requiredPermission: PERMISSIONS.PRODUCT_PRICE_UPDATE,
       });
@@ -596,12 +725,19 @@ export class CatalogService {
       });
 
       // El precio es un permiso aparte del de editar el producto.
-      if (dto.basePrice !== undefined || dto.minStock !== undefined) {
+      if (
+        dto.basePrice !== undefined ||
+        dto.minStock !== undefined ||
+        dto.wholesalePrice !== undefined
+      ) {
         const variant = await tx.productVariant.findFirst({
           where: { productId: id, deletedAt: null },
           orderBy: { position: 'asc' },
           select: { id: true },
         });
+        if (variant && dto.wholesalePrice !== undefined) {
+          await this.pricing.setWholesalePrice(variant.id, dto.wholesalePrice || null);
+        }
         if (variant) {
           await tx.productVariant.update({
             where: { id: variant.id },

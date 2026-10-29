@@ -15,7 +15,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@pos/*": ["./src/*"],
+      "@admin/*": ["../admin/src/*"]
+    }
   },
   "include": ["src"]
 }

@@ -32,7 +32,8 @@ import { newId } from '../../core/ids';
 import { OutboxService } from '../../core/outbox/outbox.service';
 import { SequenceService } from '../../core/sequences/sequence.service';
 import { AuthService } from '../auth/auth.service';
-import { PricingService } from '../catalog/pricing.service';
+import { COMMON_ITEM_SKU, PricingService } from '../catalog/pricing.service';
+import { SettingsService } from '../settings/settings.service';
 import { refreshCustomerMetrics } from '../customers/customer-metrics';
 import { CUSTOMER_NAME_SELECT, customerDisplayName } from '../customers/customer-name';
 import { StockPostingService } from '../inventory/stock-posting.service';
@@ -83,6 +84,7 @@ export class SalesService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly auth: AuthService,
+    private readonly settings: SettingsService,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -201,7 +203,10 @@ export class SalesService {
       if (dto.customerId && (!customer || !customer.isActive)) {
         throw new NotFoundError('el cliente', dto.customerId);
       }
-      const priceListId = customer?.priceListId ?? ctx.priceListId;
+      // Mayoreo (F11) manda sobre la lista del cliente y la del canal.
+      const priceListId = dto.wholesale
+        ? await this.pricing.wholesalePriceListId()
+        : (customer?.priceListId ?? ctx.priceListId);
 
       // ── 2. Precios ──
       const qtyByVariant = new Map<string, Decimal>();
@@ -236,10 +241,19 @@ export class SalesService {
           });
         }
 
+        // Producto común: el precio y la descripción los pone el cajero; no
+        // hay precio de catálogo que «sobrescribir», así que no pide permiso.
+        const isCommon = variant.sku === COMMON_ITEM_SKU;
+        if (isCommon && (item.unitPrice === undefined || item.unitPrice === null)) {
+          throw new ValidationError('El producto común necesita precio');
+        }
+
         // Precio manual: es un permiso aparte, y con razón — es la puerta
         // trasera clásica para regalar mercancía.
         let unitPrice = resolved.unitPrice;
-        if (item.unitPrice !== undefined && item.unitPrice !== null) {
+        if (isCommon) {
+          unitPrice = toMoney(item.unitPrice!);
+        } else if (item.unitPrice !== undefined && item.unitPrice !== null) {
           if (!canOverridePrice) {
             throw new ForbiddenError('No tienes permiso para cambiar el precio', {
               requiredPermission: PERMISSIONS.SALE_PRICE_OVERRIDE,
@@ -302,9 +316,11 @@ export class SalesService {
           variantId: item.variantId,
           trackStock: variant.product.trackStock,
           skuSnapshot: variant.sku,
-          nameSnapshot: variant.nameSuffix
-            ? `${variant.product.name} ${variant.nameSuffix}`
-            : variant.product.name,
+          nameSnapshot: isCommon
+            ? item.description?.trim() || variant.product.name
+            : variant.nameSuffix
+              ? `${variant.product.name} ${variant.nameSuffix}`
+              : variant.product.name,
           barcodeSnapshot: variant.barcodes[0]?.code ?? null,
           qty: quantity,
           unitPrice,
@@ -434,9 +450,15 @@ export class SalesService {
               terminalId: ctx.terminalId,
               channelId: ctx.channelId,
               occurredAt,
+              // La tienda decide si se vende sin existencia (lo normal en
+              // mostrador: el sistema dice 0 pero el artículo está en la mano,
+              // y la existencia queda en negativo hasta que se capture la
+              // entrada). Si la tienda lo prohíbe, solo quien tiene el permiso
+              // puede forzarlo venta por venta.
               allowNegative:
-                dto.allowNegativeStock === true &&
-                actor.permissions.includes(PERMISSIONS.INVENTORY_ALLOW_NEGATIVE),
+                (await this.settings.get('sales.allowNegativeStock')) ||
+                (dto.allowNegativeStock === true &&
+                  actor.permissions.includes(PERMISSIONS.INVENTORY_ALLOW_NEGATIVE)),
               lines: stockLines.map((l) => ({
                 variantId: l.variantId,
                 warehouseId: ctx.warehouseId,

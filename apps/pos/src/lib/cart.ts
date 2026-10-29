@@ -1,4 +1,4 @@
-import type { CatalogItem, SaleLineInput } from './api';
+import type { CatalogItem, CommonItem, SaleLineInput } from './api';
 import { toNumber } from './format';
 
 /**
@@ -9,22 +9,33 @@ import { toNumber } from './format';
  * manda: aquí se usa `number` por comodidad, y un centavo de diferencia por
  * redondeo binario no puede decidir cuánto paga un cliente.
  *
- * Si el total de pantalla y el del servidor no coinciden, gana el del servidor
- * y la pantalla se corrige sola al confirmar.
+ * La existencia NO topa la cantidad. En mostrador el sistema dice 0 y el
+ * artículo está en la mano del cliente: se vende, y el inventario queda en
+ * negativo hasta que se capture la entrada. Si la tienda lo prohíbe en
+ * Configuración, el servidor es quien rechaza la venta.
  */
 
 export interface CartLine {
+  /**
+   * Identificador del renglón. Para un artículo del catálogo es su variante
+   * (pasarlo dos veces sube la cantidad); un producto común lleva clave
+   * propia, porque cada uno es distinto aunque compartan variante.
+   */
+  key: string;
   variantId: string;
   sku: string;
+  barcode?: string | null;
   name: string;
   unitPrice: number;
   qty: number;
   /** Descuento por renglón, en importe. */
   discount: number;
-  /** Existencia disponible al momento de agregarlo, para avisar al pasarse. */
+  /** Existencia al momento de agregarlo; puede ser negativa. */
   available: number;
   trackStock: boolean;
   unit: string;
+  /** Producto común: descripción y precio los puso el cajero. */
+  common?: boolean;
 }
 
 export interface CartTotals {
@@ -53,98 +64,95 @@ export function cartTotals(lines: CartLine[]): CartTotals {
 }
 
 /**
- * Tope de cantidad de un renglón.
- *
- * Un servicio no tiene existencia y no se topa. Un artículo con inventario no
- * puede pasar de lo disponible: el servidor lo rechazaría de todas formas, y
- * es mejor que el cajero se entere ANTES de decirle un total al cliente que
- * después, con el ticket ya cantado.
- *
- * Esto NO sustituye la validación del servidor, que es la que manda y la que
- * vuelve a comprobar con la fila bloqueada.
- */
-export function maxQtyFor(line: Pick<CartLine, 'trackStock' | 'available'>): number {
-  if (!line.trackStock) return Number.POSITIVE_INFINITY;
-  return Math.max(0, line.available);
-}
-
-/** ¿El renglón ya está en su tope? Lo usa la interfaz para apagar el "+". */
-export function isAtMax(line: CartLine): boolean {
-  return line.qty >= maxQtyFor(line);
-}
-
-/**
  * Agrega un artículo. Si ya está en el ticket, SUBE LA CANTIDAD en vez de
  * abrir otro renglón: es lo que espera quien pasa el mismo producto dos veces
  * por el lector.
- *
- * Nunca sube por encima de la existencia disponible.
  */
 export function addToCart(lines: CartLine[], item: CatalogItem, qty = 1): CartLine[] {
-  const existing = lines.findIndex((l) => l.variantId === item.variantId);
+  const existing = lines.findIndex((l) => l.key === item.variantId);
 
   if (existing >= 0) {
     return lines.map((line, index) =>
-      index === existing
-        ? { ...line, qty: Math.min(line.qty + qty, maxQtyFor(line)) }
-        : line,
+      index === existing ? { ...line, qty: roundQty(line.qty + qty) } : line,
     );
   }
-
-  const available = toNumber(item.qtyAvailable);
-  const cap = item.trackStock ? Math.max(0, available) : Number.POSITIVE_INFINITY;
-
-  // Sin existencia no se abre renglón: el ticket no debe nacer inválido.
-  if (cap <= 0) return lines;
 
   return [
     ...lines,
     {
+      key: item.variantId,
       variantId: item.variantId,
       sku: item.sku,
+      barcode: item.barcode,
       name: item.name,
       unitPrice: toNumber(item.unitPrice),
-      qty: Math.min(qty, cap),
+      qty,
       discount: 0,
-      available,
+      available: toNumber(item.qtyAvailable),
       trackStock: item.trackStock,
       unit: item.unit,
     },
   ];
 }
 
-/** Fija la cantidad. Cero o menos elimina el renglón; el tope es la existencia. */
-export function setQty(lines: CartLine[], variantId: string, qty: number): CartLine[] {
-  if (qty <= 0) return lines.filter((l) => l.variantId !== variantId);
-  return lines.map((l) =>
-    l.variantId === variantId ? { ...l, qty: Math.min(qty, maxQtyFor(l)) } : l,
-  );
+/** Agrega un producto común: siempre en renglón nuevo. */
+export function addCommonItem(
+  lines: CartLine[],
+  common: CommonItem,
+  input: { description: string; unitPrice: number; qty: number },
+): CartLine[] {
+  return [
+    ...lines,
+    {
+      key: `comun-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      variantId: common.variantId,
+      sku: common.sku,
+      barcode: null,
+      name: input.description.trim() || 'Producto común',
+      unitPrice: input.unitPrice,
+      qty: input.qty,
+      discount: 0,
+      available: 0,
+      trackStock: false,
+      unit: 'PZA',
+      common: true,
+    },
+  ];
+}
+
+/** Fija la cantidad. Cero o menos elimina el renglón. */
+export function setQty(lines: CartLine[], key: string, qty: number): CartLine[] {
+  if (qty <= 0) return lines.filter((l) => l.key !== key);
+  return lines.map((l) => (l.key === key ? { ...l, qty: roundQty(qty) } : l));
 }
 
 /**
- * Refresca existencia y precio con lo que acaba de decir el servidor.
- *
- * Se llama tras cada búsqueda: si otra caja vendió las últimas piezas mientras
- * este ticket estaba abierto, el tope baja aquí y no en el cobro.
+ * Refresca existencia con lo que acaba de decir el servidor. Solo informa: la
+ * columna «Existencia» del ticket muestra el dato fresco, pero la cantidad
+ * capturada no se toca.
  */
 export function syncAvailability(lines: CartLine[], items: CatalogItem[]): CartLine[] {
   if (items.length === 0) return lines;
   const fresh = new Map(items.map((i) => [i.variantId, i]));
 
   return lines.map((line) => {
-    const item = fresh.get(line.variantId);
-    if (!item) return line;
-
-    const available = toNumber(item.qtyAvailable);
-    const cap = item.trackStock ? Math.max(0, available) : Number.POSITIVE_INFINITY;
-
-    return { ...line, available, qty: Math.min(line.qty, cap) };
+    const item = line.common ? undefined : fresh.get(line.variantId);
+    return item ? { ...line, available: toNumber(item.qtyAvailable) } : line;
   });
 }
 
-export function setDiscount(lines: CartLine[], variantId: string, discount: number): CartLine[] {
+/** Cambia los precios del ticket (al activar o quitar mayoreo, o cambiar de cliente). */
+export function reprice(lines: CartLine[], items: CatalogItem[]): CartLine[] {
+  const fresh = new Map(items.map((i) => [i.variantId, i]));
+  return lines.map((line) => {
+    const item = line.common ? undefined : fresh.get(line.variantId);
+    return item ? { ...line, unitPrice: toNumber(item.unitPrice), discount: 0 } : line;
+  });
+}
+
+export function setDiscount(lines: CartLine[], key: string, discount: number): CartLine[] {
   return lines.map((l) =>
-    l.variantId === variantId
+    l.key === key
       ? { ...l, discount: Math.max(0, Math.min(discount, l.unitPrice * l.qty)) }
       : l,
   );
@@ -182,13 +190,18 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export function removeLine(lines: CartLine[], variantId: string): CartLine[] {
-  return lines.filter((l) => l.variantId !== variantId);
+/** Hasta 3 decimales, como el servidor: 0.1 + 0.2 no debe pintar 0.30000000000000004. */
+function roundQty(value: number): number {
+  return Math.round(value * 1000) / 1000;
 }
 
-/** Renglones que se pasaron de la existencia conocida. */
+export function removeLine(lines: CartLine[], key: string): CartLine[] {
+  return lines.filter((l) => l.key !== key);
+}
+
+/** Renglones que dejarán la existencia en negativo: solo para avisar. */
 export function overstockedLines(lines: CartLine[]): CartLine[] {
-  return lines.filter((l) => l.trackStock && l.qty > l.available);
+  return lines.filter((l) => l.trackStock && !l.common && l.qty > l.available);
 }
 
 /** Convierte el carrito al contrato del API. */
@@ -196,8 +209,20 @@ export function toSaleLines(lines: CartLine[]): SaleLineInput[] {
   return lines.map((line) => ({
     variantId: line.variantId,
     qty: String(line.qty),
+    ...(line.common ? { unitPrice: line.unitPrice.toFixed(2), description: line.name } : {}),
     ...(line.discount > 0
       ? { discountAmount: line.discount.toFixed(2), discountReason: 'Descuento en caja' }
       : {}),
   }));
+}
+
+/**
+ * Tickets guardados antes de que existiera `key` (en espera o en el
+ * almacenamiento local): se les asigna su variante como clave.
+ */
+export function normalizeLines(raw: unknown): CartLine[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((l): l is CartLine => typeof l === 'object' && l !== null && 'variantId' in l)
+    .map((l) => ({ ...l, key: l.key ?? l.variantId }));
 }

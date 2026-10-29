@@ -60,6 +60,23 @@ export class UpdateUserDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @Length(2, 120) name?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(32) phone?: string;
   @ApiPropertyOptional({ enum: UserStatus }) @IsOptional() @IsEnum(UserStatus) status?: UserStatus;
+
+  @ApiPropertyOptional({ description: 'Contraseña temporal nueva (se pedirá cambiarla)' })
+  @IsOptional() @IsString() @Length(10, 200, { message: 'La contraseña debe tener al menos 10 caracteres' })
+  password?: string;
+
+  @ApiPropertyOptional({ description: 'PIN nuevo de 4 a 8 dígitos' })
+  @IsOptional() @IsString() @Matches(/^\d{4,8}$/, { message: 'El PIN debe tener entre 4 y 8 dígitos' })
+  pin?: string;
+}
+
+export class UpdateUserPermissionsDto {
+  @ApiProperty({
+    example: ['sale.create', 'sale.discount.apply'],
+    description: 'Permisos EFECTIVOS que debe tener la persona; las diferencias con su rol se guardan como excepciones',
+  })
+  @IsArray() @IsString({ each: true })
+  permissions!: string[];
 }
 
 export class UpdateUserRolesDto {

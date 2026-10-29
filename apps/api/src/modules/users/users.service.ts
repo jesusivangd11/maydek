@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   AUDIT_ACTIONS,
   EVENT_TYPES,
+  PERMISSION_NAMES,
   ROLES,
   permissionGroupOf,
   type AuthenticatedUser,
@@ -187,6 +188,17 @@ export class UsersService {
           ...(dto.name !== undefined ? { name: dto.name } : {}),
           ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
           ...(dto.status !== undefined ? { status: dto.status } : {}),
+          // Contraseña olvidada: el administrador pone una temporal y la persona
+          // la cambia al entrar. Nunca se muestra la anterior.
+          ...(dto.password !== undefined
+            ? {
+                passwordHash: await this.auth.hashPassword(dto.password),
+                mustChangePassword: true,
+                failedAttempts: 0,
+                lockedUntil: null,
+              }
+            : {}),
+          ...(dto.pin !== undefined ? { pinHash: await this.auth.hashPassword(dto.pin) } : {}),
           version: { increment: 1 },
         },
         select: USER_SELECT,
@@ -276,6 +288,68 @@ export class UsersService {
     });
   }
 
+  /**
+   * Fija los permisos EFECTIVOS de una persona.
+   *
+   * Lo que el administrador marca es la lista final; aquí se compara contra
+   * lo que ya traen sus roles y solo se guardan las diferencias. Así, si el
+   * rol de cajero gana un permiso mañana, también lo gana esta persona, salvo
+   * que se le haya retirado a propósito.
+   */
+  async updatePermissions(id: string, desired: string[], actor: AuthenticatedUser) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        userRoles: {
+          select: { role: { select: { rolePermissions: { select: { permission: { select: { code: true } } } } } } },
+        },
+      },
+    });
+    if (!user) throw new NotFoundError('el usuario', id);
+
+    // Nadie se encierra fuera: quien administra usuarios no puede quitarse ese permiso.
+    if (id === actor.id && !desired.includes('user.manage')) {
+      throw new ForbiddenError('No puedes quitarte el permiso de administrar usuarios');
+    }
+
+    const catalog = await this.prisma.permission.findMany({ select: { id: true, code: true } });
+    const idByCode = new Map(catalog.map((p) => [p.code, p.id]));
+    const unknown = desired.filter((code) => !idByCode.has(code));
+    if (unknown.length > 0) {
+      throw new ConflictError(`Permisos desconocidos: ${unknown.join(', ')}`);
+    }
+
+    const fromRoles = new Set(
+      user.userRoles.flatMap((ur) => ur.role.rolePermissions.map((rp) => rp.permission.code)),
+    );
+    const wanted = new Set(desired);
+    const grants = [...wanted].filter((code) => !fromRoles.has(code));
+    const revokes = [...fromRoles].filter((code) => !wanted.has(code));
+
+    await this.prisma.transaction(async (tx) => {
+      await tx.userPermission.deleteMany({ where: { userId: id } });
+      await tx.userPermission.createMany({
+        data: [
+          ...grants.map((code) => ({ userId: id, permissionId: idByCode.get(code)!, granted: true, grantedById: actor.id })),
+          ...revokes.map((code) => ({ userId: id, permissionId: idByCode.get(code)!, granted: false, grantedById: actor.id })),
+        ],
+      });
+
+      await this.audit.record({
+        action: AUDIT_ACTIONS.USER_ROLES_UPDATE,
+        entityType: 'user',
+        entityId: id,
+        entityLabel: `${user.name} (${user.email})`,
+        after: { grants, revokes },
+      });
+    });
+
+    return this.findOne(id);
+  }
+
   /** Archiva, nunca elimina: el usuario aparece en ventas y movimientos históricos. */
   async archive(id: string, actor: AuthenticatedUser) {
     const user = await this.prisma.user.findFirst({
@@ -357,7 +431,8 @@ export class UsersService {
       group,
       permissions: items.map((p) => ({
         code: p.code,
-        name: p.name,
+        // Bases sembradas con versiones anteriores guardan nombres a medio traducir.
+        name: (PERMISSION_NAMES as Record<string, string>)[p.code] ?? p.name,
         description: p.description,
         isSensitive: p.isSensitive,
       })),

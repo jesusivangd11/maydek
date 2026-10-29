@@ -248,6 +248,17 @@ interface DraftVariant {
   sku: string;
   basePrice: string;
   barcode: string;
+  stock: string;
+}
+
+/** Solo dígitos y punto: lo que se captura en un campo de importe o cantidad. */
+const decimal = (value: string) => value.replace(/[^\d.]/g, '');
+
+/** Margen sobre el precio sin IVA, que es como lo calcula el reporte de utilidad. */
+function margin(price: string, cost: string, taxRate: number): string | null {
+  const net = Number(price) / (1 + taxRate);
+  if (!(Number(cost) > 0) || !(net > 0)) return null;
+  return `Ganancia ${(((net - Number(cost)) / net) * 100).toFixed(0)} % (sin IVA)`;
 }
 
 function slug(text: string, length = 3): string {
@@ -277,6 +288,9 @@ function NewProductDialog({
   const [sku, setSku] = useState('');
   const [barcode, setBarcode] = useState('');
   const [price, setPrice] = useState('');
+  const [cost, setCost] = useState('');
+  const [wholesale, setWholesale] = useState('');
+  const [stock, setStock] = useState('');
   const [minStock, setMinStock] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [unitId, setUnitId] = useState(options.units.find((u) => u.code === 'PZA')?.id ?? options.units[0]?.id ?? '');
@@ -287,6 +301,7 @@ function NewProductDialog({
   const [variants, setVariants] = useState<DraftVariant[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const taxRate = Number(options.taxRates.find((t) => t.id === taxRateId)?.rate ?? 0);
 
   function generate() {
     const a = optionA.split(',').map((s) => s.trim()).filter(Boolean);
@@ -299,6 +314,7 @@ function NewProductDialog({
         sku: [base, ...parts.map((p) => slug(p))].join('-'),
         basePrice: price,
         barcode: '',
+        stock: '',
       })),
     );
   }
@@ -319,6 +335,9 @@ function NewProductDialog({
             barcode: barcode.trim() || undefined,
             basePrice: price || '0',
             minStock: minStock || undefined,
+            cost: cost || undefined,
+            wholesalePrice: wholesale || undefined,
+            initialStock: trackStock && stock ? stock : undefined,
           }
         : {
             variants: variants.map((v) => ({
@@ -327,6 +346,9 @@ function NewProductDialog({
               basePrice: v.basePrice || price || '0',
               barcode: v.barcode.trim() || undefined,
               minStock: minStock || undefined,
+              cost: cost || undefined,
+              wholesalePrice: wholesale || undefined,
+              initialStock: trackStock && v.stock ? v.stock : undefined,
             })),
           }),
     };
@@ -401,11 +423,26 @@ function NewProductDialog({
             ))}
           </Select>
         </Field>
-        <Field label="Precio de venta (con IVA)" htmlFor="p-price">
-          <TextInput id="p-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0.00" />
+        <Field label="Costo (por pieza, sin IVA)" htmlFor="p-cost" hint="Lo que te cuesta. Sirve para la utilidad.">
+          <TextInput id="p-cost" inputMode="decimal" value={cost} onChange={(e) => setCost(decimal(e.target.value))} placeholder="0.00" />
         </Field>
+        <Field
+          label="Precio de venta (con IVA)"
+          htmlFor="p-price"
+          hint={margin(price, cost, taxRate) ?? undefined}
+        >
+          <TextInput id="p-price" inputMode="decimal" value={price} onChange={(e) => setPrice(decimal(e.target.value))} placeholder="0.00" />
+        </Field>
+        <Field label="Precio de mayoreo" htmlFor="p-wholesale" hint="El que aplica la tecla F11 en la caja.">
+          <TextInput id="p-wholesale" inputMode="decimal" value={wholesale} onChange={(e) => setWholesale(decimal(e.target.value))} placeholder="Opcional" />
+        </Field>
+        {mode === 'simple' && trackStock && (
+          <Field label="Existencia inicial" htmlFor="p-stock" hint="Lo que tienes hoy en el anaquel.">
+            <TextInput id="p-stock" inputMode="decimal" value={stock} onChange={(e) => setStock(decimal(e.target.value))} placeholder="0" />
+          </Field>
+        )}
         <Field label="Existencia mínima" htmlFor="p-min" hint="Avisa cuando quede esto o menos.">
-          <TextInput id="p-min" inputMode="decimal" value={minStock} onChange={(e) => setMinStock(e.target.value.replace(/[^\d.]/g, ''))} />
+          <TextInput id="p-min" inputMode="decimal" value={minStock} onChange={(e) => setMinStock(decimal(e.target.value))} />
         </Field>
         <label className="check">
           <input type="checkbox" checked={!trackStock} onChange={(e) => setTrackStock(!e.target.checked)} />
@@ -457,6 +494,7 @@ function NewProductDialog({
                   <th>SKU</th>
                   <th>Código de barras</th>
                   <th className="table__money">Precio</th>
+                  {trackStock && <th className="table__num">Existencia</th>}
                   <th />
                 </tr>
               </thead>
@@ -476,8 +514,13 @@ function NewProductDialog({
                         <TextInput className="input--sm" value={v.barcode} onChange={(e) => update({ barcode: e.target.value })} />
                       </td>
                       <td>
-                        <TextInput className="input--sm num-input" inputMode="decimal" value={v.basePrice} onChange={(e) => update({ basePrice: e.target.value.replace(/[^\d.]/g, '') })} />
+                        <TextInput className="input--sm num-input" inputMode="decimal" value={v.basePrice} onChange={(e) => update({ basePrice: decimal(e.target.value) })} />
                       </td>
+                      {trackStock && (
+                        <td>
+                          <TextInput className="input--sm num-input" inputMode="decimal" value={v.stock} placeholder="0" onChange={(e) => update({ stock: decimal(e.target.value) })} />
+                        </td>
+                      )}
                       <td>
                         <Button size="sm" variant="subtle" icon="trash" aria-label="Quitar" onClick={() => setVariants((rows) => rows.filter((_, j) => j !== i))} />
                       </td>
@@ -494,7 +537,8 @@ function NewProductDialog({
         <TextInput id="p-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
       </Field>
       <p className="field__hint">
-        La existencia inicial se carga después en Inventario (ajuste) o al recibir una compra.
+        La existencia inicial queda en el kárdex como «carga inicial», al costo capturado. Después, las
+        entradas se registran con compras o ajustes de inventario.
       </p>
       {error && <Alert>{error}</Alert>}
     </Modal>
@@ -582,13 +626,15 @@ function EditProductDialog({
             onSave={(patch) => run('product', () => api.updateProduct(product.id, patch))}
           />
           <h3 className="section-label">Variantes</h3>
-          <table className="table">
+          <div className="table-wrap">
+          <table className="table variant-table">
             <thead>
               <tr>
                 <th>Variante</th>
                 <th>SKU</th>
                 <th>Código de barras</th>
                 <th className="table__money">Precio</th>
+                <th className="table__money">Mayoreo</th>
                 <th className="table__num">Mínimo</th>
                 {showCost && <th className="table__money">Costo prom.</th>}
                 <th className="table__num">Existencia</th>
@@ -598,7 +644,7 @@ function EditProductDialog({
             <tbody>
               {product.variants.map((v) => (
                 <VariantEditor
-                  key={`${v.id}-${v.basePrice}-${v.sku}`}
+                  key={`${v.id}-${v.basePrice}-${v.wholesalePrice ?? ''}-${v.sku}`}
                   variant={v}
                   showCost={showCost}
                   canEdit={canEdit}
@@ -609,6 +655,7 @@ function EditProductDialog({
               ))}
             </tbody>
           </table>
+          </div>
           {canEdit && <AddVariantRow onAdd={(body) => run('add', () => api.addVariant(product.id, body))} />}
         </>
       )}
@@ -704,13 +751,23 @@ function VariantEditor({
   canEdit: boolean;
   canPrice: boolean;
   busy: boolean;
-  onSave: (patch: { sku?: string; nameSuffix?: string; basePrice?: string; minStock?: string; barcode?: string; isActive?: boolean }) => void;
+  onSave: (patch: {
+    sku?: string;
+    nameSuffix?: string;
+    basePrice?: string;
+    wholesalePrice?: string;
+    minStock?: string;
+    barcode?: string;
+    isActive?: boolean;
+  }) => void;
 }) {
   const primary = variant.barcodes.find((b) => b.isPrimary)?.code ?? variant.barcodes[0]?.code ?? '';
+  const initialWholesale = variant.wholesalePrice ? Number(variant.wholesalePrice).toFixed(2) : '';
   const [sku, setSku] = useState(variant.sku);
   const [suffix, setSuffix] = useState(variant.nameSuffix ?? '');
   const [barcode, setBarcode] = useState(primary);
   const [price, setPrice] = useState(Number(variant.basePrice).toFixed(2));
+  const [wholesale, setWholesale] = useState(initialWholesale);
   const [min, setMin] = useState(variant.minStock ? String(Number(variant.minStock)) : '');
   const stock = variant.stock.reduce((acc, s) => acc + Number(s.qtyOnHand), 0);
 
@@ -720,9 +777,10 @@ function VariantEditor({
     if (suffix !== (variant.nameSuffix ?? '')) out.nameSuffix = suffix;
     if (barcode !== primary) out.barcode = barcode;
     if (Number(price) !== Number(variant.basePrice)) out.basePrice = price;
+    if (wholesale !== initialWholesale) out.wholesalePrice = wholesale;
     if (min !== (variant.minStock ? String(Number(variant.minStock)) : '')) out.minStock = min;
     return out;
-  }, [sku, suffix, barcode, price, min, variant, primary]);
+  }, [sku, suffix, barcode, price, wholesale, initialWholesale, min, variant, primary]);
 
   return (
     <tr style={variant.isActive ? undefined : { opacity: 0.55 }}>
@@ -742,7 +800,18 @@ function VariantEditor({
           value={price}
           disabled={!canPrice}
           title={canPrice ? undefined : 'Cambiar precios requiere el permiso product.price.update'}
-          onChange={(e) => setPrice(e.target.value.replace(/[^\d.]/g, ''))}
+          onChange={(e) => setPrice(decimal(e.target.value))}
+        />
+      </td>
+      <td>
+        <TextInput
+          className="input--sm num-input"
+          inputMode="decimal"
+          value={wholesale}
+          placeholder="—"
+          disabled={!canPrice}
+          title="Precio de mayoreo (F11). Vacío: sin precio de mayoreo."
+          onChange={(e) => setWholesale(decimal(e.target.value))}
         />
       </td>
       <td>

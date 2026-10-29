@@ -1,6 +1,8 @@
 import { createPortal } from 'react-dom';
 import type { ReturnDetail, SaleDetail } from '../lib/api';
+import type { StoreSettings } from '../lib/api';
 import { formatDateTime, formatMoney, formatQty, toNumber } from '../lib/format';
+import { getSettings, useStoreSettings } from '../lib/settings';
 
 /**
  * Ticket para impresora térmica.
@@ -10,8 +12,9 @@ import { formatDateTime, formatMoney, formatQty, toNumber } from '../lib/format'
  * con cualquier impresora de tickets instalada como impresora del sistema
  * (Epson TM, Xprinter, 3nStar…), que es como se conecta el 90 % de ellas.
  *
- * El ancho del papel (58 u 80 mm) se elige en Caja y se recuerda en este
- * equipo: cada caja tiene su impresora.
+ * Encabezado, pie y qué datos salen los decide Configuración → Ticket. El
+ * ancho del papel (58 u 80 mm) también, pero cada caja puede fijar el suyo
+ * en Caja: cada equipo tiene su impresora.
  */
 
 export type PaperWidth = '58' | '80';
@@ -20,10 +23,12 @@ const PAPER_KEY = 'pos.paperWidth';
 
 export function getPaperWidth(): PaperWidth {
   try {
-    return localStorage.getItem(PAPER_KEY) === '58' ? '58' : '80';
+    const local = localStorage.getItem(PAPER_KEY);
+    if (local === '58' || local === '80') return local;
   } catch {
-    return '80';
+    // Sin almacenamiento local manda la configuración de la tienda.
   }
+  return getSettings()['ticket.paper'];
 }
 
 export function setPaperWidth(width: PaperWidth): void {
@@ -40,11 +45,13 @@ export function printTicket(): void {
   window.print();
 }
 
-const FOOTER = [
-  '¡Gracias por su compra!',
-  'Cambios y devoluciones dentro de 30 días',
-  'presentando este ticket.',
-];
+/** Texto libre de varias líneas → renglones del ticket. */
+function linesOf(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
 
 export function PrintTicket({
   sale,
@@ -57,10 +64,19 @@ export function PrintTicket({
   cashReceived?: string | null;
   reprint?: boolean;
 }) {
-  const issuer = sale?.issuer;
+  const settings = useStoreSettings();
+  const issuer = mergeIssuer(sale?.issuer, settings);
+  const header = linesOf(settings['ticket.header']);
+  const footer = linesOf(settings['ticket.footer']);
+
   const content = sale ? (
     <>
       <Header issuer={issuer} fallback={sale.branch.name} />
+      {header.map((line) => (
+        <p key={line} className="pt-center">
+          {line}
+        </p>
+      ))}
       <div className="pt-meta">
         <div>
           <span>Folio</span>
@@ -70,15 +86,19 @@ export function PrintTicket({
           <span>Fecha</span>
           <span>{formatDateTime(sale.occurredAt)}</span>
         </div>
-        <div>
-          <span>Atendió</span>
-          <span>{sale.cashier?.name ?? '—'}</span>
-        </div>
-        <div>
-          <span>Cliente</span>
-          <span>{sale.customer?.name ?? 'Público en general'}</span>
-        </div>
-        {sale.customer?.rfc && (
+        {settings['ticket.showCashier'] && (
+          <div>
+            <span>Atendió</span>
+            <span>{sale.cashier?.name ?? '—'}</span>
+          </div>
+        )}
+        {settings['ticket.showCustomer'] && (
+          <div>
+            <span>Cliente</span>
+            <span>{sale.customer?.name ?? 'Público en general'}</span>
+          </div>
+        )}
+        {settings['ticket.showCustomer'] && sale.customer?.rfc && (
           <div>
             <span>RFC</span>
             <span>{sale.customer.rfc}</span>
@@ -91,7 +111,10 @@ export function PrintTicket({
       <div className="pt-rule" />
       {sale.items.map((item) => (
         <div key={item.lineNumber} className="pt-item">
-          <div className="pt-item__name">{item.name}</div>
+          <div className="pt-item__name">
+            {settings['ticket.showSku'] && item.sku !== 'COMUN' ? `${item.sku} · ` : ''}
+            {item.name}
+          </div>
           <div className="pt-row">
             <span>
               {formatQty(item.qty)} × {formatMoney(item.unitPrice)}
@@ -112,7 +135,7 @@ export function PrintTicket({
         <span>Subtotal</span>
         <span>{formatMoney(sale.subtotal)}</span>
       </div>
-      {toNumber(sale.discountTotal) > 0 && (
+      {settings['ticket.showSavings'] && toNumber(sale.discountTotal) > 0 && (
         <div className="pt-row">
           <span>Ahorro</span>
           <span>−{formatMoney(sale.discountTotal)}</span>
@@ -161,7 +184,7 @@ export function PrintTicket({
         Artículos: {formatQty(sale.items.reduce((acc, i) => acc + toNumber(i.qty), 0))}
       </p>
       <div className="pt-rule" />
-      {FOOTER.map((line) => (
+      {footer.map((line) => (
         <p key={line} className="pt-center">
           {line}
         </p>
@@ -170,7 +193,7 @@ export function PrintTicket({
     </>
   ) : ret ? (
     <>
-      <Header issuer={undefined} fallback="Comprobante de devolución" />
+      <Header issuer={issuer} fallback="Comprobante de devolución" />
       <p className="pt-center pt-strong">DEVOLUCIÓN</p>
       <div className="pt-meta">
         <div>
@@ -239,6 +262,26 @@ export function PrintTicket({
     </div>,
     document.body,
   );
+}
+
+/**
+ * Los datos del negocio capturados en Configuración mandan sobre los de la
+ * empresa registrada; lo que quede vacío se toma de la empresa.
+ */
+function mergeIssuer(
+  issuer: SaleDetail['issuer'] | undefined,
+  settings: StoreSettings,
+): SaleDetail['issuer'] {
+  const pick = (value: string, fallback: string | null | undefined) =>
+    value.trim() || fallback || null;
+  return {
+    ...(issuer ?? {}),
+    name: pick(settings['business.name'], issuer?.name) ?? '',
+    legalName: pick(settings['business.legalName'], issuer?.legalName),
+    rfc: pick(settings['business.rfc'], issuer?.rfc),
+    address: pick(settings['business.address'], issuer?.address),
+    phone: pick(settings['business.phone'], issuer?.phone),
+  } as SaleDetail['issuer'];
 }
 
 function Header({

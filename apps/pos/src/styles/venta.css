@@ -1,0 +1,627 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   VENTA — pantalla de mostrador con tabla, varios tickets y teclas de función.
+   También la barra de módulos de la caja y los cuadros de estado («flag»).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Barra de módulos ─────────────────────────────────────────────────────── */
+.modules {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.modules::-webkit-scrollbar {
+  display: none;
+}
+
+.module {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 78px;
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: rgb(255 255 255 / 0.78);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.module:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.module[aria-current='page'] {
+  color: #fff;
+  border-bottom-color: var(--brand-teal);
+  background: rgb(255 255 255 / 0.08);
+}
+
+.module__key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--brand-teal);
+  opacity: 0.9;
+}
+
+.module--exit {
+  color: var(--brand-peach);
+}
+
+/* ── Cuadros de estado: recuadro recto con barra lateral, no píldora ────── */
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 30px;
+  padding: 4px 12px 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-left: 5px solid currentColor;
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+button.flag {
+  cursor: pointer;
+}
+
+.flag--positive {
+  color: var(--positive);
+  background: var(--positive-soft);
+}
+
+.flag--danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.flag--info {
+  color: var(--primary-text);
+  background: var(--primary-soft);
+}
+
+.flag--accent {
+  color: #7a3412;
+  background: #fde7da;
+  border-color: var(--brand-peach);
+  border-left-color: #c2410c;
+}
+
+.on-navy .flag {
+  background: rgb(255 255 255 / 0.06);
+  border-color: rgb(255 255 255 / 0.18);
+}
+
+.on-navy .flag--positive {
+  color: #7ee08a;
+  border-left-color: #4caf50;
+}
+
+.on-navy .flag--danger {
+  color: #ff9a8f;
+  border-left-color: #ef6a5d;
+}
+
+.on-navy .flag--accent {
+  color: var(--brand-peach);
+  border-left-color: var(--brand-peach);
+}
+
+/* ── Pantalla de venta ────────────────────────────────────────────────────── */
+.venta {
+  display: flex;
+  flex-direction: column;
+  /* La pantalla entera: el pie con el total queda siempre abajo. */
+  height: calc(100dvh - var(--topbar-h));
+  min-height: 520px;
+  padding: var(--s-4) var(--s-5);
+  gap: var(--s-3);
+  background: var(--bg);
+}
+
+.venta__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.venta__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.venta__dash {
+  color: var(--text-3);
+  font-weight: var(--weight-normal);
+}
+
+.venta__flags {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.venta__capture {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--primary);
+  border-radius: 3px;
+}
+
+.venta__label {
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.venta__code {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding: 0 var(--s-3);
+  border: 2px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+
+.venta__code:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft-2);
+}
+
+.venta__tools,
+.venta__foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.venta__tools-gap {
+  flex: 1;
+}
+
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 38px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tool:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.tool:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tool[aria-pressed='true'] {
+  border-color: #c2410c;
+  background: #fde7da;
+  color: #7a3412;
+}
+
+.tool__key {
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--brand-navy);
+  color: var(--brand-teal);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* Pestañas de tickets */
+.venta__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  border-bottom: 2px solid var(--primary);
+  overflow-x: auto;
+}
+
+.venta__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 36px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.venta__tab[aria-selected='true'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-on-solid);
+}
+
+.venta__tab-total {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.venta__tabs-note {
+  margin-left: auto;
+  padding: 0 0 6px var(--s-3);
+  color: var(--text-3);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.venta__notice {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--primary);
+  border-radius: 2px;
+  background: var(--surface);
+  font-size: var(--text-sm);
+}
+
+.venta__notice--error {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Tabla */
+.venta__table-wrap {
+  flex: 1;
+  min-height: 160px;
+  overflow: auto;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+
+.venta__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-base);
+}
+
+.venta__table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 10px;
+  background: var(--brand-navy);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.venta__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.venta__table tbody tr {
+  cursor: default;
+}
+
+.venta__table tbody tr:nth-child(even) td {
+  background: var(--surface-2);
+}
+
+.venta__table tbody tr[aria-selected='true'] td {
+  background: var(--primary-soft-2);
+}
+
+.venta__table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.venta__table .strong {
+  font-weight: var(--weight-semibold);
+}
+
+.venta__table .danger {
+  color: var(--danger);
+  font-weight: var(--weight-semibold);
+}
+
+.venta__table--compact td {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.venta__qty {
+  min-width: 56px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  text-align: right;
+  cursor: pointer;
+}
+
+.venta__qty:hover {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.venta__tag {
+  margin-left: var(--s-2);
+  padding: 1px 6px;
+  border-left: 3px solid var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.venta__sub {
+  display: block;
+  color: var(--text-3);
+  font-size: var(--text-sm);
+}
+
+.venta__empty {
+  margin: 0;
+  padding: var(--s-6) var(--s-4);
+  color: var(--text-3);
+  text-align: center;
+}
+
+.venta__search-results {
+  max-height: 52vh;
+  overflow: auto;
+  border: 1px solid var(--border-strong);
+}
+
+/* Pie */
+.venta__foot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-4);
+  align-items: stretch;
+}
+
+.venta__foot-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.venta__count {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.venta__count strong {
+  color: var(--text);
+  font-size: var(--text-lg);
+}
+
+.venta__last {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-5);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--positive);
+  border-radius: 2px;
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.venta__foot-links {
+  display: flex;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+}
+
+.linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.venta__charge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--s-1);
+  min-width: 300px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--brand-navy);
+  border-radius: 3px;
+  color: #fff;
+}
+
+.venta__pay {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 44px;
+  padding: 0 var(--s-5);
+  border: 0;
+  border-radius: 3px;
+  background: var(--positive);
+  color: #fff;
+  font: inherit;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+
+.venta__pay:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.venta__pay kbd {
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 0.25);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.venta__total {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 46px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--brand-teal);
+  font-variant-numeric: tabular-nums;
+}
+
+.venta__saving {
+  margin: 0;
+  color: var(--brand-peach);
+  font-size: var(--text-sm);
+}
+
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+/* Editor de variantes: que el SKU y los importes no se aplasten. */
+.variant-table .input--sm {
+  min-width: 6rem;
+}
+
+.variant-table .input--sm.mono {
+  min-width: 8.5rem;
+}
+
+.report-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.report-bar .select {
+  max-width: 260px;
+}
+
+/* Privilegios por usuario */
+.perm-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--s-4);
+}
+
+.perm-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 2px;
+}
+
+.perm-sensitive {
+  min-height: 0;
+  margin-left: var(--s-2);
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+/* Módulos de la trastienda dentro de la caja */
+.module-view {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .venta {
+    padding: var(--s-3);
+  }
+
+  .venta__capture {
+    flex-wrap: wrap;
+  }
+
+  .venta__foot {
+    grid-template-columns: 1fr;
+  }
+
+  .venta__charge {
+    min-width: 0;
+  }
+
+  .venta__total {
+    font-size: 38px;
+  }
+}

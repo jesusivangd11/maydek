@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Decimal, money, toMoney } from '@pv/domain-rules';
 import { PrismaService } from '../../core/database/prisma.service';
+import { newId } from '../../core/ids';
+import { SettingsService } from '../settings/settings.service';
 
 /**
  * Resolución de precio.
@@ -27,9 +29,72 @@ export interface ResolvedPrice {
   source: 'PRICE_LIST' | 'BASE_PRICE';
 }
 
+/** Código de la lista que usa la tecla de mayoreo si la configuración no elige otra. */
+export const WHOLESALE_LIST_CODE = 'MAYOREO';
+
+/** SKU del artículo de sistema que respalda los renglones de «producto común». */
+export const COMMON_ITEM_SKU = 'COMUN';
+
 @Injectable()
 export class PricingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
+
+  /**
+   * La lista de precios de mayoreo: la que eligió el dueño en Configuración o,
+   * si no eligió ninguna, la de código MAYOREO, que se crea la primera vez que
+   * se necesita. Así F11 funciona desde el primer día sin configurar nada.
+   */
+  async wholesalePriceListId(): Promise<string> {
+    const configured = await this.settings.get('sales.wholesalePriceListId');
+    if (configured) {
+      const list = await this.prisma.client.priceList.findFirst({
+        where: { id: configured, deletedAt: null },
+        select: { id: true },
+      });
+      if (list) return list.id;
+    }
+
+    const list = await this.prisma.client.priceList.upsert({
+      where: { code: WHOLESALE_LIST_CODE },
+      create: { id: newId(), code: WHOLESALE_LIST_CODE, name: 'Mayoreo', includesTax: true, priority: 10 },
+      update: {},
+      select: { id: true },
+    });
+    return list.id;
+  }
+
+  /**
+   * Fija (o quita, con null) el precio de mayoreo de un artículo. Un solo
+   * escalón desde 1 pieza: el precio por volumen fino se sigue capturando en
+   * las listas de precios.
+   */
+  async setWholesalePrice(variantId: string, price: string | null) {
+    const priceListId = await this.wholesalePriceListId();
+    const tx = this.prisma.client;
+    if (price === null || price === '') {
+      await tx.priceListItem.deleteMany({ where: { priceListId, variantId, minQty: 1 } });
+      return;
+    }
+    await tx.priceListItem.upsert({
+      where: { priceListId_variantId_minQty: { priceListId, variantId, minQty: 1 } },
+      create: { id: newId(), priceListId, variantId, minQty: 1, price: toMoney(price).toFixed(4) },
+      update: { price: toMoney(price).toFixed(4) },
+    });
+  }
+
+  /** Precio de mayoreo (escalón de 1 pieza) de varios artículos. */
+  async wholesalePrices(variantIds: string[]): Promise<Map<string, string>> {
+    if (variantIds.length === 0) return new Map();
+    const priceListId = await this.wholesalePriceListId();
+    const items = await this.prisma.client.priceListItem.findMany({
+      where: { priceListId, variantId: { in: variantIds }, minQty: 1 },
+      select: { variantId: true, price: true },
+    });
+    return new Map(items.map((i) => [i.variantId, i.price.toString()]));
+  }
 
   /**
    * Precios de varios variantes de una vez.

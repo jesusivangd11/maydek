@@ -22,6 +22,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { ReturnsModule } from './modules/returns/returns.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { SupportModule } from './modules/support/support.module';
 
 const config = env();
@@ -71,6 +72,7 @@ const config = env();
     AuthModule,
     UsersModule,
     HealthModule,
+    SettingsModule,
 
     // ── Operación ──
     PosContextModule,
