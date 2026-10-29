@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Maydek — Configuración inicial</title>
+    <link rel="stylesheet" href="setup.css" />
+  </head>
+  <body>
+    <header class="head">
+      <img class="logo" src="assets/maydek-lockup.png" alt="Maydek" />
+      <div>
+        <h1>Bienvenido a Maydek</h1>
+        <p>Configura este equipo una sola vez. Todo se guarda en esta computadora.</p>
+      </div>
+    </header>
+
+    <main>
+      <form id="form" novalidate>
+        <section id="mode-section">
+          <h2>¿Cómo se usará esta computadora?</h2>
+          <div class="choices">
+            <label class="choice">
+              <input type="radio" name="mode" value="server" checked />
+              <span><b>Caja principal</b><small>Aquí se guarda toda la información del negocio. Elige esta si es tu primera o única caja.</small></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mode" value="client" />
+              <span><b>Otra caja de la tienda</b><small>Se conecta por la red local a la caja principal, que debe estar encendida.</small></span>
+            </label>
+          </div>
+        </section>
+
+        <div id="server-fields">
+          <section>
+            <h2>Tu negocio</h2>
+            <div class="row">
+              <label class="field">
+                <span>Nombre del negocio</span>
+                <input name="companyName" required minlength="2" maxlength="120" placeholder="Ej. Ferretería La Esperanza" />
+              </label>
+              <label class="field">
+                <span>RFC <small>(opcional, sale en el ticket)</small></span>
+                <input name="rfc" maxlength="13" pattern="[A-Za-zÑñ&amp;]{3,4}[0-9]{6}[A-Za-z0-9]{3}" placeholder="XAXX010101000" />
+              </label>
+            </div>
+            <div class="row">
+              <label class="field">
+                <span>Nombre de la sucursal</span>
+                <input name="branchName" maxlength="80" value="Tienda principal" />
+              </label>
+              <label class="field">
+                <span>Zona horaria</span>
+                <select name="timezone">
+                  <option value="America/Mexico_City">Centro (CDMX, Guadalajara, Monterrey)</option>
+                  <option value="America/Chihuahua">Chihuahua</option>
+                  <option value="America/Ciudad_Juarez">Ciudad Juárez</option>
+                  <option value="America/Mazatlan">Pacífico (Sinaloa, Nayarit, BCS)</option>
+                  <option value="America/Hermosillo">Sonora</option>
+                  <option value="America/Tijuana">Noroeste (Baja California)</option>
+                  <option value="America/Cancun">Sureste (Quintana Roo)</option>
+                  <option value="America/Matamoros">Frontera noreste (Matamoros, Reynosa)</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section>
+            <h2>Tu usuario de administrador</h2>
+            <div class="row">
+              <label class="field">
+                <span>Tu nombre</span>
+                <input name="adminName" required minlength="2" maxlength="120" autocomplete="name" />
+              </label>
+              <label class="field">
+                <span>Correo (con él entras al sistema)</span>
+                <input name="adminEmail" type="email" required maxlength="200" autocomplete="email" />
+              </label>
+            </div>
+            <div class="row">
+              <label class="field">
+                <span>Contraseña <small>(mínimo 10 caracteres)</small></span>
+                <input name="adminPassword" type="password" required minlength="10" maxlength="128" autocomplete="new-password" />
+              </label>
+              <label class="field">
+                <span>Repite la contraseña</span>
+                <input name="adminPassword2" type="password" required minlength="10" maxlength="128" autocomplete="new-password" />
+              </label>
+            </div>
+            <div class="row">
+              <label class="field">
+                <span>PIN de supervisor <small>(4 a 6 dígitos)</small></span>
+                <input name="adminPin" type="password" inputmode="numeric" required pattern="[0-9]{4,6}" maxlength="6" />
+              </label>
+              <p class="hint">El PIN autoriza en la caja cancelaciones, devoluciones y descuentos de un cajero sin permiso.</p>
+            </div>
+          </section>
+
+          <section>
+            <label class="check">
+              <input type="checkbox" name="lan" />
+              <span>Otras computadoras de la tienda se conectarán a esta caja por la red local.
+              <small>Windows te pedirá permitir el acceso en redes privadas.</small></span>
+            </label>
+          </section>
+        </div>
+
+        <div id="client-fields" hidden>
+          <section>
+            <h2>Conectar con la caja principal</h2>
+            <label class="field">
+              <span>Dirección de la caja principal</span>
+              <input name="serverUrl" placeholder="192.168.1.20:3210" />
+            </label>
+            <p class="hint">En la caja principal abre <b>Ayuda → Conectar otra caja</b> y copia la dirección que aparece.</p>
+          </section>
+        </div>
+
+        <footer class="foot">
+          <label class="check">
+            <input type="checkbox" name="terms" required />
+            <span>Acepto el contrato de licencia y los términos de uso de Maydek.</span>
+          </label>
+          <p id="error" class="error" role="alert"></p>
+          <button type="submit" id="submit">Configurar y empezar</button>
+        </footer>
+      </form>
+
+      <div id="working" class="working" hidden>
+        <div class="spinner"></div>
+        <p id="progress">Preparando…</p>
+        <small>Esto tarda menos de un minuto. No cierres esta ventana.</small>
+      </div>
+    </main>
+    <script src="setup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,73 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:09.294
+Bienvenido a Maydek. En unos minutos verás cómo vender, cobrar, hacer devoluciones y el corte de caja, y cómo administrar tu negocio.
+
+2
+00:00:09.388 --> 00:00:16.101
+Cada persona entra con su propio correo y contraseña. Así el sistema sabe quién hizo cada venta.
+
+3
+00:00:16.212 --> 00:00:23.908
+Antes de vender, abre la caja. Ve a Caja, escribe el efectivo con el que empiezas el día y pulsa Abrir caja.
+
+4
+00:00:24.004 --> 00:00:30.631
+Para vender, escanea el código de barras con el lector. El artículo se agrega solo al ticket.
+
+5
+00:00:30.714 --> 00:00:36.170
+Si el artículo no tiene código, búscalo por su nombre y pulsa Enter.
+
+6
+00:00:36.222 --> 00:00:44.267
+Para cobrar pulsa F2. Escribe con cuánto te pagan y el sistema calcula el cambio. Confirma con Enter.
+
+7
+00:00:44.315 --> 00:00:54.222
+La venta queda registrada, el inventario se descuenta solo, y con F9 imprimes el ticket en tu impresora térmica. Con Enter empiezas la siguiente venta.
+
+8
+00:00:54.300 --> 00:01:05.190
+Con F4 eliges al cliente. Si tiene precio de mayoreo, los precios del ticket cambian solos. También puedes venderle a crédito, respetando su límite.
+
+9
+00:01:05.276 --> 00:01:10.475
+Cobras igual que antes: F2, el efectivo recibido y Enter.
+
+10
+00:01:10.566 --> 00:01:20.147
+En Ventas encuentras todo lo vendido. Abre un ticket para reimprimirlo, hacer una devolución parcial o total, o cancelarlo si fue en el mismo turno.
+
+11
+00:01:20.187 --> 00:01:30.313
+Si el cajero no tiene permiso, un supervisor autoriza con su PIN. El dinero se devuelve en efectivo o como nota de crédito, y lo dañado se manda a mermas.
+
+12
+00:01:30.416 --> 00:01:41.721
+Al final del día ve a Caja. El sistema te dice cuánto efectivo debe haber. Cuéntalo, escríbelo y cierra la caja. Si hay diferencia, te pide el motivo.
+
+13
+00:01:41.790 --> 00:01:50.781
+La administración se abre desde el menú Sistema, o con Control más 2. En el tablero ves las ventas del día, la utilidad y lo más vendido.
+
+14
+00:01:50.861 --> 00:01:57.076
+En Productos das de alta artículos con sus tallas y colores, sus precios y sus códigos de barras.
+
+15
+00:01:57.153 --> 00:02:05.652
+En Inventario consultas existencias y el kardex de cada artículo. En Compras registras lo que te llega del proveedor, con su costo.
+
+16
+00:02:05.697 --> 00:02:12.708
+En Clientes llevas el crédito y los abonos, y en Usuarios das de alta a tu equipo, cada quien con sus permisos.
+
+17
+00:02:12.745 --> 00:02:26.917
+El sistema funciona sin internet y se respalda solo todos los días. En el menú Respaldos puedes guardar una copia en una memoria USB. Y si necesitas ayuda, en Ayuda, Soporte técnico, están nuestros datos.
+
+18
+00:02:27.006 --> 00:02:31.773
+Gracias por elegir Maydek. ¡Mucho éxito en tu negocio!

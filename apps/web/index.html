@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maydek · Punto de venta e inventario para tu negocio</title>
+    <meta
+      name="description"
+      content="Maydek es un punto de venta para Windows que funciona sin internet: caja, inventario, devoluciones, clientes a crédito, compras y reportes de utilidad. Hecho en Chihuahua, precios en pesos y soporte en español."
+    />
+    <meta name="theme-color" content="#121f3e" />
+    <link rel="icon" href="/brand/icon-32.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/brand/icon-180.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#contenido">Saltar al contenido</a>
+
+    <header class="site-head">
+      <div class="wrap site-head__row">
+        <a href="#" class="logo" aria-label="Maydek, inicio">
+          <img src="/brand/maydek-lockup.png" alt="Maydek" width="160" height="28" />
+        </a>
+        <button class="menu-toggle" aria-expanded="false" aria-controls="menu">Menú</button>
+        <nav id="menu" class="site-nav" aria-label="Principal">
+          <a href="#caja">Caja</a>
+          <a href="#administracion">Administración</a>
+          <a href="#tutorial">Video</a>
+          <a href="#precios">Precios</a>
+          <a href="#soporte">Soporte</a>
+          <span class="site-nav__actions">
+            <a class="btn btn--ghost" href="#descargar">Descargar</a>
+            <a class="btn btn--primary" href="#soporte" data-open-form="SALES">Pedir demostración</a>
+          </span>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <!-- ── Portada ─────────────────────────────────────────────────── -->
+      <section class="hero">
+        <div class="wrap">
+          <div class="hero__copy">
+            <p class="kicker">Punto de venta para Windows · Funciona sin internet</p>
+            <h1>Cobra rápido, sabe cuánto ganas y no vuelvas a perder una pieza.</h1>
+            <p class="lead">
+              Maydek junta la caja, el almacén y la oficina en un solo programa. Escaneas, cobras en
+              efectivo, tarjeta o a crédito, y el inventario se descuenta solo, con su kardex y su
+              costo.
+            </p>
+            <div class="hero__cta">
+              <a class="btn btn--primary btn--lg" href="#descargar">Descargar para Windows</a>
+              <a class="btn btn--ghost btn--lg" href="#tutorial">Ver el video</a>
+            </div>
+          </div>
+
+          <figure class="hero__shot">
+            <div class="laptop">
+              <div class="laptop__screen">
+                <img src="/shots/caja-venta.jpg" width="1280" height="720" alt="Pantalla de venta de Maydek con un ticket en curso y el catálogo de productos." />
+              </div>
+              <div class="laptop__base"></div>
+            </div>
+          </figure>
+
+          <dl class="facts">
+            <div><dt>Sin internet</dt><dd>La base de datos vive en tu computadora.</dd></div>
+            <div><dt>Respaldo diario</dt><dd>Automático, y con copia a USB o a tu nube.</dd></div>
+            <div><dt>Varias cajas</dt><dd>Se conectan por la red de la tienda.</dd></div>
+            <div><dt>En pesos</dt><dd>Precios con IVA incluido, sin plazo forzoso.</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- ── Caja ────────────────────────────────────────────────────── -->
+      <section id="caja" class="mode">
+        <div class="wrap mode__grid">
+          <figure class="mode__shot">
+            <div class="monitor">
+              <div class="monitor__screen">
+                <img src="/shots/caja-cobro.jpg" width="1280" height="720" loading="lazy" alt="Venta cobrada en Maydek: folio, efectivo recibido, cambio a entregar y botón para imprimir el ticket." />
+              </div>
+              <div class="monitor__stand"></div>
+            </div>
+          </figure>
+          <div class="mode__copy">
+            <p class="kicker kicker--peach">Modo caja</p>
+            <h2>Para quien cobra.</h2>
+            <p class="lead">Pensado para estar de pie frente al mostrador: letra grande, todo con teclado y el cambio a la vista.</p>
+            <ul class="arrows arrows--peach">
+              <li>El lector de código de barras agrega el artículo sin un clic.</li>
+              <li><kbd>F2</kbd> cobra, <kbd>F4</kbd> elige cliente, <kbd>F6</kbd> deja el ticket en espera.</li>
+              <li>Pago mixto: parte con tarjeta y el resto en efectivo.</li>
+              <li>Precio de mayoreo automático según el cliente.</li>
+              <li>Devoluciones y cancelaciones con PIN del supervisor.</li>
+              <li>Corte X cuando quieras y corte Z al cerrar, con el efectivo esperado.</li>
+              <li>Ticket térmico de 58 u 80 mm.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Administración ──────────────────────────────────────────── -->
+      <section id="administracion" class="mode mode--alt">
+        <div class="wrap mode__grid mode__grid--flip">
+          <div class="mode__copy">
+            <p class="kicker">Modo administración</p>
+            <h2>Para quien lleva el negocio.</h2>
+            <p class="lead">Inventario, compras, clientes y números del día, en el mismo programa y con los mismos datos que la caja.</p>
+            <ul class="arrows">
+              <li>Tablero con ventas, utilidad y lo más vendido.</li>
+              <li>Productos con tallas y colores generados en un paso.</li>
+              <li>Kardex de cada movimiento, con usuario y motivo.</li>
+              <li>Compras, recepciones parciales y flete prorrateado al costo.</li>
+              <li>Clientes, crédito con límite, estado de cuenta y abonos.</li>
+              <li>Utilidad calculada con el costo del día de la venta.</li>
+              <li>Usuarios, roles y auditoría de lo sensible.</li>
+            </ul>
+          </div>
+          <figure class="mode__shot">
+            <div class="laptop">
+              <div class="laptop__screen">
+                <img src="/shots/admin-tablero.jpg" width="1280" height="720" loading="lazy" alt="Tablero de administración de Maydek con las ventas y la utilidad del día." />
+              </div>
+              <div class="laptop__base"></div>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ── Video tutorial ──────────────────────────────────────────── -->
+      <section id="tutorial" class="section">
+        <div class="wrap">
+          <header class="section__head">
+            <p class="kicker">Video tutorial</p>
+            <h2>De abrir la caja al corte del día.</h2>
+            <p class="lead">Grabado en el programa real. Elige un capítulo para saltar a esa parte.</p>
+          </header>
+          <div class="tutorial">
+            <div class="tutorial__player">
+              <video data-tutorial controls preload="metadata" playsinline poster="/video/tutorial.jpg">
+                <source src="/video/tutorial.webm" type="video/webm" />
+                <!-- Los subtítulos ya van dentro del video; la pista es para lectores de pantalla y buscadores. -->
+                <track kind="captions" src="/video/tutorial.vtt" srclang="es" label="Español" />
+                Tu navegador no puede reproducir el video.
+              </video>
+            </div>
+            <ol class="tutorial__chapters" data-chapters aria-label="Capítulos del video"></ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Cómo empezar ────────────────────────────────────────────── -->
+      <section class="section section--alt">
+        <div class="wrap">
+          <header class="section__head">
+            <p class="kicker">Cómo empezar</p>
+            <h2>Vendiendo en una tarde.</h2>
+          </header>
+          <ol class="steps">
+            <li>
+              <h3>Instala el programa</h3>
+              <p>Abre el instalador y escribe el nombre de tu negocio y tu usuario. La base de datos se crea sola en tu equipo.</p>
+            </li>
+            <li>
+              <h3>Carga tu mercancía</h3>
+              <p>Da de alta tus productos con sus tallas y colores y registra la existencia inicial con su costo. Si vienes de otro sistema, te ayudamos a pasarlos.</p>
+            </li>
+            <li>
+              <h3>Abre la caja y cobra</h3>
+              <p>Conecta tu lector y tu impresora de tickets. Tu equipo aprende a cobrar en minutos.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ── Precios ─────────────────────────────────────────────────── -->
+      <section id="precios" class="section">
+        <div class="wrap">
+          <header class="section__head section__head--row">
+            <div>
+              <p class="kicker">Precios</p>
+              <h2>En pesos y con IVA incluido.</h2>
+              <p class="lead">Sin contrato forzoso. Cambia de plan o cancela cuando quieras.</p>
+            </div>
+            <div class="billing" role="group" aria-label="Periodo de pago">
+              <button type="button" class="billing__opt" data-billing="monthly" aria-pressed="true">Mensual</button>
+              <button type="button" class="billing__opt" data-billing="annual" aria-pressed="false">
+                Anual <span class="billing__save" data-save></span>
+              </button>
+            </div>
+          </header>
+
+          <div class="plans" data-plans></div>
+          <p class="fine">
+            La suscripción es la licencia de uso del programa e incluye las actualizaciones, el respaldo
+            automático diario en tu equipo y el soporte.
+            ¿Necesitas algo distinto? <a href="#soporte" data-open-form="SALES">Pide una cotización</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── Descargar ───────────────────────────────────────────────── -->
+      <section id="descargar" class="section section--alt">
+        <div class="wrap download">
+          <div class="download__copy">
+            <p class="kicker">Descargar</p>
+            <h2>Un instalador, todo incluido.</h2>
+            <p class="lead">
+              El punto de venta, la administración y su propia base de datos. No necesitas internet
+              para vender; solo para descargar actualizaciones.
+            </p>
+            <div class="download__cta">
+              <a class="btn btn--primary btn--lg" data-download href="#soporte" data-open-form="SALES">Descargar para Windows</a>
+              <span class="fine" data-download-meta></span>
+            </div>
+            <p class="fine" data-download-note>
+              Te enviamos el instalador junto con tu licencia: deja tus datos en el formulario y te
+              escribimos el mismo día hábil.
+            </p>
+          </div>
+          <div class="hardware">
+            <h3>Lo que necesitas</h3>
+            <dl>
+              <div><dt>Computadora</dt><dd>Windows 10 u 11 de 64 bits, 4 GB de RAM (8 GB recomendado) y 2 GB libres en disco.</dd></div>
+              <div><dt>Impresora de tickets</dt><dd>Térmica de 58 u 80 mm instalada como impresora de Windows (Epson TM, Xprinter, 3nStar…).</dd></div>
+              <div><dt>Lector de códigos</dt><dd>Cualquier lector USB o inalámbrico que funcione como teclado.</dd></div>
+              <div><dt>Cajón de dinero</dt><dd>Conectado a la impresora de tickets.</dd></div>
+              <div><dt>Varias cajas</dt><dd>Las demás computadoras se conectan a la caja principal por la red de la tienda, sin internet.</dd></div>
+              <div><dt>Internet</dt><dd>Solo para actualizaciones y soporte en línea.</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Soporte ─────────────────────────────────────────────────── -->
+      <section id="soporte" class="section">
+        <div class="wrap">
+          <header class="section__head">
+            <p class="kicker">Soporte</p>
+            <h2>Te atiende una persona, en español.</h2>
+            <p class="lead" data-hours></p>
+          </header>
+
+          <div class="support">
+            <div class="support__main">
+              <div class="tabs" role="tablist">
+                <button class="tabs__item" role="tab" aria-selected="true" data-tab="ticket">Abrir un ticket</button>
+                <button class="tabs__item" role="tab" aria-selected="false" data-tab="track">Consultar mi ticket</button>
+                <button class="tabs__item" role="tab" aria-selected="false" data-tab="guides">Guías rápidas</button>
+              </div>
+
+              <!-- Abrir ticket -->
+              <form class="panel" data-panel="ticket" novalidate>
+                <div class="field-row">
+                  <label class="field">
+                    <span>¿En qué te ayudamos?</span>
+                    <select name="kind">
+                      <option value="SUPPORT">Tengo un problema con el sistema</option>
+                      <option value="SALES">Quiero contratar o una demostración</option>
+                      <option value="CONTACT">Otra consulta</option>
+                    </select>
+                  </label>
+                  <label class="field" data-plan-field hidden>
+                    <span>Plan de interés</span>
+                    <select name="plan" data-plan-select></select>
+                  </label>
+                </div>
+                <div class="field-row">
+                  <label class="field">
+                    <span>Nombre</span>
+                    <input name="name" required minlength="2" maxlength="120" autocomplete="name" />
+                  </label>
+                  <label class="field">
+                    <span>Correo</span>
+                    <input name="email" type="email" required maxlength="200" autocomplete="email" />
+                  </label>
+                </div>
+                <div class="field-row">
+                  <label class="field">
+                    <span>Teléfono <small>(opcional)</small></span>
+                    <input name="phone" type="tel" maxlength="30" autocomplete="tel" />
+                  </label>
+                  <label class="field">
+                    <span>Negocio <small>(opcional)</small></span>
+                    <input name="company" maxlength="160" autocomplete="organization" />
+                  </label>
+                </div>
+                <label class="field">
+                  <span>Asunto</span>
+                  <input name="subject" required minlength="3" maxlength="160" />
+                </label>
+                <label class="field">
+                  <span>Cuéntanos qué pasa</span>
+                  <textarea name="message" required minlength="10" maxlength="5000" rows="5" placeholder="Qué estabas haciendo, qué esperabas y qué pasó. Si hay un mensaje de error, cópialo aquí."></textarea>
+                </label>
+                <!-- Campo trampa para bots: oculto a las personas. -->
+                <label class="hp" aria-hidden="true">Sitio web <input name="website" tabindex="-1" autocomplete="off" /></label>
+                <label class="consent">
+                  <input type="checkbox" name="consent" required />
+                  <span>Acepto el <a href="/privacidad.html" target="_blank">aviso de privacidad</a> para que me contacten sobre esta solicitud.</span>
+                </label>
+                <div class="form-foot">
+                  <button class="btn btn--primary btn--lg" type="submit">Enviar solicitud</button>
+                  <p class="form-msg" role="status" aria-live="polite"></p>
+                </div>
+              </form>
+
+              <!-- Consultar ticket -->
+              <form class="panel" data-panel="track" hidden novalidate>
+                <p class="muted">Escribe el folio que te dimos al abrir tu ticket y el correo con el que lo enviaste.</p>
+                <div class="field-row">
+                  <label class="field">
+                    <span>Folio</span>
+                    <input name="folio" required placeholder="SOP-XXXXXX" maxlength="16" />
+                  </label>
+                  <label class="field">
+                    <span>Correo</span>
+                    <input name="email" type="email" required />
+                  </label>
+                </div>
+                <div class="form-foot">
+                  <button class="btn btn--primary" type="submit">Consultar</button>
+                  <p class="form-msg" role="status" aria-live="polite"></p>
+                </div>
+                <div class="track-result" hidden></div>
+              </form>
+
+              <!-- Guías -->
+              <div class="panel guides" data-panel="guides" hidden>
+                <details>
+                  <summary>Instalar el sistema por primera vez</summary>
+                  <p>Abre el instalador y sigue los pasos. Al terminar, el asistente te pide el nombre de tu negocio, tu correo, una contraseña de al menos 10 caracteres y un PIN de supervisor. Elige <b>Caja principal</b> si es tu primera o única computadora.</p>
+                </details>
+                <details>
+                  <summary>Conectar otra caja de la tienda</summary>
+                  <p>En la caja principal abre <b>Ayuda → Conectar otra caja</b> y anota la dirección (por ejemplo 192.168.1.20:3210). En la otra computadora instala Maydek, elige <b>Otra caja de la tienda</b> y escribe esa dirección. Las dos deben estar en la misma red.</p>
+                </details>
+                <details>
+                  <summary>Respaldos: dónde están y cómo restaurar</summary>
+                  <p>El sistema se respalda solo una vez al día y guarda los últimos 30. En el menú <b>Respaldos</b> puedes respaldar al momento, guardar una copia extra en una memoria USB o en tu nube, y restaurar un respaldo (antes de restaurar se guarda lo que había).</p>
+                </details>
+                <details>
+                  <summary>Abrir la caja al empezar el día</summary>
+                  <p>En el punto de venta entra a <b>Caja</b>, captura el fondo inicial (el efectivo con el que empiezas) y pulsa <b>Abrir caja</b>. Sin caja abierta no se puede cobrar en efectivo.</p>
+                </details>
+                <details>
+                  <summary>Cobrar una venta</summary>
+                  <p>Escanea los artículos o búscalos por nombre (F3). Pulsa <b>F2</b>, escribe el efectivo recibido y confirma con Enter: el sistema te dice el cambio y descuenta el inventario.</p>
+                </details>
+                <details>
+                  <summary>Cobrar con dos formas de pago (pago mixto)</summary>
+                  <p>En la ventana de cobro elige <b>Agregar otro pago</b>, aparta la parte con tarjeta (con su número de autorización) y cobra el resto en efectivo.</p>
+                </details>
+                <details>
+                  <summary>Vender a un cliente con precio de mayoreo o a crédito</summary>
+                  <p>Pulsa <b>F4</b> y elige al cliente: si tiene lista de mayoreo, los precios cambian solos. Para venta a crédito elige la forma de pago <b>A crédito</b>; el sistema respeta su límite.</p>
+                </details>
+                <details>
+                  <summary>Dejar un ticket en espera</summary>
+                  <p>Con <b>F6</b> el ticket se aparta y la caja queda libre. Recupéralo con <b>F7</b>. Los tickets en espera no apartan mercancía y vencen a las 24 horas.</p>
+                </details>
+                <details>
+                  <summary>Hacer una devolución o cancelar una venta</summary>
+                  <p>Entra a <b>Ventas</b>, abre el ticket y elige <b>Devolución</b> (escoge piezas y cantidades) o <b>Cancelar venta</b> si fue en el mismo turno. Si no tienes el permiso, un supervisor escribe su PIN.</p>
+                </details>
+                <details>
+                  <summary>Hacer el corte de caja</summary>
+                  <p>En <b>Caja</b> cuenta el efectivo, escríbelo en <b>Efectivo contado</b> y cierra. Si hay diferencia, el sistema pide el motivo antes de cerrar.</p>
+                </details>
+                <details>
+                  <summary>Dar de alta un producto con tallas y colores</summary>
+                  <p>En la administración entra a <b>Productos → Nuevo producto</b>, elige <b>Con variantes</b>, escribe los colores y las tallas separados por coma y pulsa <b>Generar variantes</b>.</p>
+                </details>
+                <details>
+                  <summary>Recibir mercancía del proveedor</summary>
+                  <p>En <b>Compras</b> abre la orden y pulsa <b>Recibir mercancía</b> (puede ser parcial), o usa <b>Recepción directa</b> si llegó sin orden. El costo y la existencia se actualizan solos.</p>
+                </details>
+                <details>
+                  <summary>Configurar la impresora de tickets</summary>
+                  <p>Instala la impresora térmica como impresora de Windows y márcala como predeterminada. En <b>Caja → Impresora de tickets</b> elige papel de 58 u 80 mm.</p>
+                </details>
+                <details>
+                  <summary>Atajos de teclado de la caja</summary>
+                  <p><b>F2</b> cobrar · <b>F3</b> buscar · <b>F4</b> cliente · <b>F5</b> descuento · <b>F6</b> en espera · <b>F7</b> recuperar · <b>F9</b> imprimir ticket · <b>Esc</b> limpiar · <b>Ctrl+2</b> abrir la administración.</p>
+                </details>
+              </div>
+            </div>
+
+            <aside class="support__side">
+              <div class="card">
+                <h3>Otros canales</h3>
+                <ul class="channels" data-channels></ul>
+                <p class="fine">Respondemos el mismo día hábil. Si no puedes cobrar, márcalo como urgente y te atendemos en menos de 2 horas en horario de atención.</p>
+              </div>
+              <div class="card card--accent">
+                <h3>¿Ya tienes Maydek?</h3>
+                <p>En el programa, <b>Ayuda → Soporte técnico</b> muestra nuestros datos y la versión que tienes instalada.</p>
+                <div class="card__links">
+                  <a href="#tutorial">Ver el video tutorial →</a>
+                  <a href="#soporte" data-goto-tab="guides">Guías rápidas →</a>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Preguntas frecuentes ────────────────────────────────────── -->
+      <section id="preguntas" class="section section--alt">
+        <div class="wrap faq-grid">
+          <header class="section__head">
+            <p class="kicker">Preguntas frecuentes</p>
+            <h2>Antes de empezar.</h2>
+            <p class="lead">¿No está tu duda? <a href="#soporte" data-open-form="CONTACT">Pregúntanos</a>.</p>
+          </header>
+          <div class="faq">
+            <details>
+              <summary>¿Necesito comprar equipo especial?</summary>
+              <p>No. Funciona en la computadora con Windows 10 u 11 que ya tienes. El lector de códigos y la impresora de tickets son opcionales y sirven los que se venden en cualquier tienda de cómputo.</p>
+            </details>
+            <details>
+              <summary>¿Qué pasa si se va el internet?</summary>
+              <p>Nada: sigues vendiendo, cobrando y haciendo cortes. El sistema y su base de datos están instalados en tu computadora, y las demás cajas se conectan por la red de la tienda. El internet solo se usa para descargar actualizaciones y para el soporte en línea.</p>
+            </details>
+            <details>
+              <summary>¿Y si se va la luz o se descompone la computadora?</summary>
+              <p>Cada venta se guarda en el momento en que se cobra, así que un apagón no borra lo ya vendido. Para una falla de la computadora están los respaldos: el sistema se respalda solo cada día, y desde el menú Respaldos puedes guardar una copia extra en una memoria USB o en tu nube para restaurarla en otro equipo.</p>
+            </details>
+            <details>
+              <summary>¿Puedo pasar mis productos desde otro sistema?</summary>
+              <p>Sí. Te ayudamos a migrar tu catálogo, tus clientes y tu existencia inicial desde Excel o desde tu sistema anterior.</p>
+            </details>
+            <details>
+              <summary>¿Emite facturas (CFDI 4.0)?</summary>
+              <p>El sistema ya guarda los datos fiscales de tus clientes y productos. La facturación electrónica se activa como módulo adicional con el proveedor de timbrado que elijas; pregúntanos por su disponibilidad.</p>
+            </details>
+            <details>
+              <summary>¿Mis datos están seguros?</summary>
+              <p>Tu información se queda en tu computadora: nosotros no la vemos ni la guardamos. Cada usuario entra con su propia cuenta y solo ve lo que su rol permite, las contraseñas se guardan cifradas, las operaciones sensibles quedan auditadas y el sistema se respalda solo cada día.</p>
+            </details>
+            <details>
+              <summary>¿Hay plazo forzoso o costo de cancelación?</summary>
+              <p>No. La licencia se paga mes a mes (o un año con descuento) y puedes cancelar cuando quieras. Tu información es tuya: puedes exportarla a Excel desde el sistema en cualquier momento.</p>
+            </details>
+            <details>
+              <summary>¿Cuántas cajas puedo tener?</summary>
+              <p>Depende del plan: Básico incluye 1 caja, Profesional 3 y Empresarial las que necesites. Las cajas adicionales se conectan a la caja principal por la red de la tienda. Puedes subir de plan en cualquier momento.</p>
+            </details>
+            <details>
+              <summary>¿Cómo recibo las actualizaciones?</summary>
+              <p>Cuando la computadora tenga internet, el sistema descarga la versión nueva y la instala al cerrarlo, sin perder tu información. Las actualizaciones están incluidas en tu licencia.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Llamado final ───────────────────────────────────────────── -->
+      <section class="final">
+        <div class="wrap final__row">
+          <div>
+            <h2>¿Lo vemos funcionando con tus productos?</h2>
+            <p>Una demostración de 20 minutos, por videollamada o en tu negocio en Chihuahua.</p>
+          </div>
+          <a class="btn btn--primary btn--lg" href="#soporte" data-open-form="SALES">Pedir demostración</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <div class="wrap site-foot__grid">
+        <div>
+          <a href="#" class="logo" aria-label="Maydek, inicio">
+            <img src="/brand/maydek-logo.png" alt="Maydek · Punto de venta" width="190" height="44" loading="lazy" />
+          </a>
+          <p class="fine" data-tagline></p>
+        </div>
+        <nav aria-label="Producto">
+          <h4>Producto</h4>
+          <a href="#caja">Caja</a>
+          <a href="#administracion">Administración</a>
+          <a href="#tutorial">Video tutorial</a>
+          <a href="#precios">Precios</a>
+          <a href="#descargar">Descargar</a>
+        </nav>
+        <nav aria-label="Ayuda">
+          <h4>Ayuda</h4>
+          <a href="#soporte">Abrir un ticket</a>
+          <a href="#soporte" data-goto-tab="track">Consultar mi ticket</a>
+          <a href="#soporte" data-goto-tab="guides">Guías rápidas</a>
+          <a href="#preguntas">Preguntas frecuentes</a>
+        </nav>
+        <nav aria-label="Legal">
+          <h4>Legal</h4>
+          <a href="/privacidad.html">Aviso de privacidad</a>
+          <a href="/terminos.html">Términos y licencia de uso</a>
+        </nav>
+      </div>
+      <div class="wrap site-foot__base">
+        <span>© <span data-year></span> <span data-brand>Maydek</span>. Todos los derechos reservados.</span>
+        <span>Hecho en Chihuahua, México · Precios en pesos, IVA incluido.</span>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

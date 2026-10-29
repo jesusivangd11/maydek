@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <title>Maydek</title>
+    <style>
+      html, body { margin: 0; height: 100%; }
+      body {
+        display: grid; place-items: center; text-align: center;
+        background: #121f3e;
+        color: #fff; font: 15px/1.5 'Segoe UI', system-ui, sans-serif;
+        -webkit-app-region: drag; user-select: none;
+      }
+      img { display: block; width: 240px; height: auto; margin: 0 auto; }
+      p { margin: 22px 0 0; color: #b9c3d9; min-height: 1.5em; }
+      .bar { width: 220px; height: 3px; margin: 12px auto 0; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+      .bar::after { content: ''; display: block; width: 40%; height: 100%; background: #1ee3cc; border-radius: 3px; animation: slide 1.2s ease-in-out infinite; }
+      @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+    </style>
+  </head>
+  <body>
+    <div>
+      <img src="assets/maydek-logo.png" alt="Maydek · Punto de venta" />
+      <p id="status">Iniciando…</p>
+      <div class="bar"></div>
+    </div>
+    <script>
+      window.setup?.onProgress((text) => (document.getElementById('status').textContent = text));
+    </script>
+  </body>
+</html>

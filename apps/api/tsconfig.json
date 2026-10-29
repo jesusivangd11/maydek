@@ -1,0 +1,13 @@
+{
+  "extends": "@pv/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.typecheck.tsbuildinfo",
+    "rootDir": "./",
+    "baseUrl": "./",
+    "types": ["node", "vitest/globals"],
+    "paths": { "@/*": ["src/*"] }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts", "scripts/**/*.ts", "prisma.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

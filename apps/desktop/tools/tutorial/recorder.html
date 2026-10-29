@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Grabador</title>
+    <style>
+      html, body { margin: 0; background: #000; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <canvas id="c" width="1280" height="720"></canvas>
+    <script>
+      // Compone cada cuadro (pantalla real + cursor + subtítulos) y lo graba
+      // junto con la narración. Lo controla record.cjs por IPC.
+      const { ipcRenderer } = require('electron');
+      const { readFileSync } = require('node:fs');
+      const canvas = document.getElementById('c');
+      const g = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+
+      let frame = null;
+      let caption = '';
+      let chapter = null;
+      let chapterAt = 0;
+      let card = null;
+      const cursor = { x: W / 2, y: H / 2, fromX: W / 2, fromY: H / 2, toX: W / 2, toY: H / 2, t0: 0, ms: 1 };
+      let clickAt = -1e9;
+      const logo = new Image();
+      logo.src = '../../src/assets/maydek-logo.png';
+
+      ipcRenderer.on('frame', async (_e, jpeg) => {
+        const bitmap = await createImageBitmap(new Blob([jpeg], { type: 'image/jpeg' }));
+        frame?.close?.();
+        frame = bitmap;
+      });
+      ipcRenderer.on('cursor', (_e, p) => {
+        Object.assign(cursor, { fromX: cursor.x, fromY: cursor.y, toX: p.x, toY: p.y, t0: performance.now(), ms: p.ms });
+      });
+      ipcRenderer.on('click', () => (clickAt = performance.now()));
+      ipcRenderer.on('chapter', (_e, title) => {
+        chapter = title;
+        chapterAt = performance.now();
+      });
+      ipcRenderer.on('card', (_e, value) => (card = value));
+
+      // ── Audio: la narración entra a la misma grabación ──
+      const audio = new AudioContext({ sampleRate: 48000 });
+      const dest = audio.createMediaStreamDestination();
+      ipcRenderer.on('say', async (_e, { file, text }) => {
+        caption = text;
+        const data = readFileSync(file);
+        const buffer = await audio.decodeAudioData(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+        const src = audio.createBufferSource();
+        src.buffer = buffer;
+        src.connect(dest);
+        src.start();
+      });
+
+      function wrap(text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let line = '';
+        for (const w of words) {
+          const test = line ? `${line} ${w}` : w;
+          if (g.measureText(test).width > maxWidth && line) {
+            lines.push(line);
+            line = w;
+          } else line = test;
+        }
+        if (line) lines.push(line);
+        return lines;
+      }
+
+      function roundRect(x, y, w, h, r) {
+        g.beginPath();
+        g.roundRect(x, y, w, h, r);
+        g.fill();
+      }
+
+      function drawCursor(x, y) {
+        g.save();
+        g.translate(x, y);
+        g.beginPath();
+        g.moveTo(0, 0);
+        g.lineTo(0, 22);
+        g.lineTo(6, 17);
+        g.lineTo(10, 26);
+        g.lineTo(14, 24);
+        g.lineTo(10, 15);
+        g.lineTo(17, 15);
+        g.closePath();
+        g.fillStyle = '#111';
+        g.strokeStyle = '#fff';
+        g.lineWidth = 2;
+        g.stroke();
+        g.fill();
+        g.restore();
+      }
+
+      function draw() {
+        const now = performance.now();
+        g.fillStyle = '#0c1016';
+        g.fillRect(0, 0, W, H);
+        if (frame) g.drawImage(frame, 0, 0, W, H);
+
+        // Cursor con movimiento suave y onda al hacer clic.
+        const k = Math.min(1, (now - cursor.t0) / cursor.ms);
+        const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        cursor.x = cursor.fromX + (cursor.toX - cursor.fromX) * e;
+        cursor.y = cursor.fromY + (cursor.toY - cursor.fromY) * e;
+        const since = now - clickAt;
+        if (since < 500) {
+          g.beginPath();
+          g.arc(cursor.x, cursor.y, 8 + since / 18, 0, Math.PI * 2);
+          g.strokeStyle = `rgba(13, 122, 131, ${1 - since / 500})`;
+          g.lineWidth = 4;
+          g.stroke();
+        }
+        drawCursor(cursor.x, cursor.y);
+
+        // Título del capítulo, unos segundos al empezar.
+        const age = now - chapterAt;
+        if (chapter && age < 3500) {
+          const alpha = Math.min(1, age / 300, (3500 - age) / 400);
+          g.globalAlpha = alpha;
+          g.font = '600 22px "Segoe UI", sans-serif';
+          const w = g.measureText(chapter).width + 48;
+          g.fillStyle = 'rgba(18, 31, 62, 0.94)';
+          roundRect(24, 22, w, 46, 23);
+          g.fillStyle = '#1ee3cc';
+          g.fillRect(24 + 23, 64, w - 46, 3);
+          g.fillStyle = '#fff';
+          g.textBaseline = 'middle';
+          g.fillText(chapter, 48, 46);
+          g.globalAlpha = 1;
+        }
+
+        // Subtítulos.
+        if (caption) {
+          g.font = '500 24px "Segoe UI", sans-serif';
+          const lines = wrap(caption, W - 260);
+          const lh = 34;
+          const boxH = lines.length * lh + 24;
+          const boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 48;
+          const x = (W - boxW) / 2;
+          const y = H - boxH - 26;
+          g.fillStyle = 'rgba(12, 16, 22, 0.82)';
+          roundRect(x, y, boxW, boxH, 12);
+          g.fillStyle = '#fff';
+          g.textBaseline = 'top';
+          g.textAlign = 'center';
+          lines.forEach((l, i) => g.fillText(l, W / 2, y + 14 + i * lh));
+          g.textAlign = 'left';
+        }
+
+        // Tarjeta de portada o cierre.
+        // Fondo azul marino de Maydek con el logotipo completo.
+        if (card) {
+          g.fillStyle = 'rgba(18, 31, 62, 0.97)';
+          g.fillRect(0, 0, W, H);
+          if (logo.complete && logo.naturalWidth) {
+            const lw = 520;
+            const lh = (lw * logo.naturalHeight) / logo.naturalWidth;
+            g.drawImage(logo, (W - lw) / 2, 150, lw, lh);
+          }
+          g.fillStyle = '#1ee3cc';
+          g.fillRect(W / 2 - 40, 330, 80, 3);
+          g.fillStyle = '#fff';
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.font = '600 40px "Segoe UI", sans-serif';
+          g.fillText(card.title, W / 2, 392);
+          g.font = '400 24px "Segoe UI", sans-serif';
+          g.fillStyle = '#b9c3d9';
+          g.fillText(card.subtitle ?? '', W / 2, 444);
+          g.textAlign = 'left';
+        }
+      }
+      setInterval(draw, 1000 / 30);
+
+      let recorder = null;
+      const chunks = [];
+      ipcRenderer.on('start', async () => {
+        await audio.resume();
+        const stream = new MediaStream([
+          ...canvas.captureStream(30).getVideoTracks(),
+          ...dest.stream.getAudioTracks(),
+        ]);
+        const type = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+          ? 'video/webm;codecs=vp9,opus'
+          : 'video/webm;codecs=vp8,opus';
+        recorder = new MediaRecorder(stream, {
+          mimeType: type,
+          videoBitsPerSecond: 2_500_000,
+          audioBitsPerSecond: 96_000,
+        });
+        recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+        recorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          ipcRenderer.send('video', new Uint8Array(await blob.arrayBuffer()));
+        };
+        recorder.start(1000);
+      });
+      ipcRenderer.on('stop', () => recorder?.stop());
+    </script>
+  </body>
+</html>

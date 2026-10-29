@@ -1,0 +1,1492 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PANTALLAS
+
+   Composición: qué va dónde en Vender, Caja y Ventas. Todo lo que se dibuja
+   —botones, tablas, distintivos— sale de `ui.css`; aquí solo se decide el
+   reparto del espacio.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Barra superior ───────────────────────────────────────────────────────
+   Navegación principal del sistema. Tres zonas fijas: identidad a la
+   izquierda, secciones al centro-izquierda, contexto de trabajo a la
+   derecha. El estado de caja vive aquí porque condiciona TODO lo demás: sin
+   caja abierta no se cobra, y eso tiene que verse desde cualquier pantalla.
+   ─────────────────────────────────────────────────────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  height: var(--topbar-h);
+  padding: 0 var(--s-5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Superficie de marca ──────────────────────────────────────────────────
+   La barra del POS, el menú del panel y la cabecera del acceso van sobre el
+   azul marino del logotipo de Maydek. En vez de escribir colores sueltos, se
+   redefinen aquí los tokens con los valores del tema oscuro: botones,
+   distintivos y textos que viven dentro se adaptan solos.
+   ─────────────────────────────────────────────────────────────────────────── */
+.on-navy {
+  --surface: var(--brand-navy);
+  --surface-2: var(--brand-navy-2);
+  --surface-3: #22335f;
+  --border: #2a3a63;
+  --border-strong: #3a4b78;
+  --text: #f1f4fa;
+  --text-2: #b9c3d9;
+  --text-3: #8c98b5;
+  --primary-soft: rgb(30 227 204 / 0.14);
+  --primary-text: var(--brand-teal);
+  --positive: #5cc561;
+  --positive-soft: rgb(92 197 97 / 0.16);
+  --positive-border: rgb(92 197 97 / 0.4);
+  --warning: #f0b955;
+  --warning-soft: rgb(240 185 85 / 0.15);
+  --warning-border: rgb(240 185 85 / 0.4);
+  --danger: #ff8a7e;
+  --danger-soft: rgb(255 138 126 / 0.14);
+  --danger-border: rgb(255 138 126 / 0.4);
+  --focus: var(--brand-teal);
+  background: var(--brand-navy);
+  color: var(--text);
+}
+
+.topbar.on-navy {
+  border-bottom-color: #0a1430;
+  box-shadow: 0 1px 0 rgb(30 227 204 / 0.25);
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  min-width: 0;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding-right: var(--s-6);
+  border-right: 1px solid var(--border);
+  height: 36px;
+}
+
+/* Logotipo completo (símbolo + «maydek») y, en pantallas estrechas, solo el
+   símbolo. Son PNG con transparencia pensados para fondo azul marino. */
+.brand__logo {
+  display: block;
+  height: 26px;
+  width: auto;
+  flex: none;
+}
+
+.brand__symbol {
+  display: none;
+  height: 28px;
+  width: auto;
+  flex: none;
+}
+
+.brand__name {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.brand__sub {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-normal);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Secciones. Activa = pastilla llena, no solo un subrayado de 2px: el cajero
+   tiene que saber dónde está sin enfocar la vista. */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 38px;
+  padding: 0 var(--s-4);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.nav__item:hover:not([aria-current='page']) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.nav__item[aria-current='page'] {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-weight: var(--weight-semibold);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.who__name {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.who__role {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.topbar__divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+}
+
+/* ── Contenedores de contenido ────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Caja y Ventas son pantallas de lectura: ancho generoso pero acotado, para
+   que una fila de tabla no llegue a 2500px en un monitor ancho y se vuelva
+   imposible de seguir con la vista. */
+.page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-6) var(--s-9);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VENDER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--ticket-w);
+  height: calc(100dvh - var(--topbar-h));
+}
+
+/* ── Catálogo ─────────────────────────────────────────────────────────────── */
+.catalog {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Buscador y filtros no se van con el scroll: son el punto de entrada y
+   tienen que estar siempre a mano. */
+.catalog__head {
+  flex: none;
+  padding: var(--s-5) var(--s-5) var(--s-4);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.catalog__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.catalog__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  height: 34px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+  transition: background var(--transition), color var(--transition),
+    border-color var(--transition);
+}
+
+.chip:hover:not([aria-pressed='true']) {
+  border-color: var(--border-heavy);
+  color: var(--text);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-on-solid);
+  font-weight: var(--weight-semibold);
+}
+
+.chip__count {
+  margin-left: var(--s-2);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+  font-weight: var(--weight-normal);
+}
+
+.catalog__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s-5);
+}
+
+.catalog__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-4);
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+/* ── Tarjeta de producto ──────────────────────────────────────────────────
+   Cuatro datos en una jerarquía fija, siempre en el mismo sitio: nombre,
+   SKU, precio, existencia. El precio es lo segundo que se mira después del
+   nombre, así que es lo segundo más grande de la tarjeta y se ancla abajo
+   para que todas las tarjetas de una fila lo alineen aunque los nombres
+   ocupen una o dos líneas.
+   ─────────────────────────────────────────────────────────────────────────── */
+.products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+  gap: var(--s-4);
+}
+
+.product {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s-1);
+  min-height: 152px;
+  padding: var(--s-4);
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition),
+    transform var(--transition);
+}
+
+.product:hover:not(:disabled) {
+  border-color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.product:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.product:disabled {
+  cursor: not-allowed;
+  background: var(--surface-2);
+}
+
+.product__name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  min-height: calc(var(--text-md) * var(--leading-snug) * 2);
+}
+
+.product__sku {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+.product__price {
+  margin-top: auto;
+  padding-top: var(--s-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.product__stock {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-3);
+}
+
+.product__stock::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.product__stock--low {
+  color: var(--warning);
+}
+
+.product__stock--out {
+  color: var(--danger);
+  font-weight: var(--weight-semibold);
+}
+
+.product--out {
+  opacity: 0.62;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TICKET
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ticket {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+
+.ticket__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  height: 56px;
+  padding: 0 var(--s-4) 0 var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.ticket__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.ticket__count {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket__lines {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.line {
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.line:hover {
+  background: var(--surface-2);
+}
+
+.line__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.line__name {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+.line__sku {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+.line__remove {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.line__remove:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.line__body {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+.line__unit {
+  font-size: var(--text-sm);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.line__total {
+  margin-left: auto;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.line__note {
+  margin-top: var(--s-2);
+  font-size: var(--text-sm);
+  color: var(--warning);
+}
+
+/* Selector de cantidad. 36px de alto: es el control que más se pulsa de toda
+   la pantalla después de las tarjetas. */
+.stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.stepper__btn {
+  width: 34px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.stepper__btn:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.stepper__btn:disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.stepper__qty {
+  width: 52px;
+  height: 36px;
+  padding: 0 var(--s-1);
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: transparent;
+  text-align: center;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper__qty:focus {
+  outline: none;
+  background: var(--primary-soft);
+}
+
+/* ── Pie del ticket ───────────────────────────────────────────────────────
+   Zona fija y visualmente separada: es donde está el número que se le canta
+   al cliente y el botón que cierra la operación. Nunca se desplaza con el
+   scroll de los renglones.
+   ─────────────────────────────────────────────────────────────────────────── */
+.ticket__foot {
+  flex: none;
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+
+.totals__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  font-size: var(--text-base);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.totals__row--discount {
+  color: var(--positive);
+  font-weight: var(--weight-medium);
+}
+
+.totals__row--total {
+  align-items: baseline;
+  margin-top: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border-strong);
+  color: var(--text);
+}
+
+.totals__label {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.totals__amount {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket__shortcuts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  margin-top: var(--s-3);
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+.ticket__shortcuts span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COBRO
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pay__total {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.pay__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.pay__amount {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.quick-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--s-2);
+}
+
+.quick {
+  height: 42px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.quick:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* El cambio: el dato que el cajero mira mientras cuenta billetes. */
+.change {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.change__label {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--text-2);
+}
+
+.change__amount {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.change--positive {
+  background: var(--positive-soft);
+  border-color: var(--positive-border);
+}
+
+.change--positive .change__label,
+.change--positive .change__amount {
+  color: var(--positive);
+}
+
+.change--danger {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.change--danger .change__label,
+.change--danger .change__amount {
+  color: var(--danger);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VENTA COMPLETADA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.receipt-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 460px);
+  justify-content: center;
+  align-content: start;
+  gap: var(--s-4);
+  height: calc(100dvh - var(--topbar-h));
+  overflow-y: auto;
+  padding: var(--s-7) var(--s-5) var(--s-9);
+}
+
+.receipt {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--s-6);
+}
+
+.receipt__change {
+  margin-top: var(--s-4);
+  padding-bottom: var(--s-5);
+  margin-bottom: var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.receipt__change-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Lo más grande de todo el sistema. Tras cobrar, los tres segundos
+   siguientes son contar el cambio: ese número no se busca, se ve. */
+.receipt__change-amount {
+  margin-top: var(--s-2);
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--positive);
+}
+
+.receipt__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin: 0 0 var(--s-5);
+}
+
+.receipt__meta div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.receipt__meta dt {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.receipt__meta dd {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+}
+
+.receipt__lines {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-base);
+}
+
+.receipt__lines td {
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.receipt__lines tfoot td {
+  border-bottom: 0;
+  padding: var(--s-1) 0;
+  color: var(--text-2);
+}
+
+.receipt__lines tfoot .receipt__total td {
+  padding-top: var(--s-3);
+  margin-top: var(--s-2);
+  border-top: 2px solid var(--border-heavy);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+}
+
+.receipt__qty {
+  width: 46px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.receipt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.receipt-actions__row {
+  display: flex;
+  gap: var(--s-3);
+}
+
+.receipt-actions__row .btn {
+  flex: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAJA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Dos columnas: el turno a la izquierda (lo que se consulta), el arqueo a la
+   derecha (lo que se opera). Antes era una columna estrecha centrada que
+   dejaba media pantalla en blanco. */
+.cash {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--s-6);
+  align-items: start;
+}
+
+.cash__main,
+.cash__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+.cash__side {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--s-6));
+}
+
+/* Abrir caja ocupa toda la pantalla porque no hay nada más que hacer en
+   ella: una sola tarjeta centrada en lugar de una caja pequeña arrinconada
+   arriba a la izquierda. */
+.cash-closed {
+  display: grid;
+  place-items: center;
+  min-height: calc(100dvh - var(--topbar-h));
+  padding: var(--s-6);
+}
+
+.cash-closed__panel {
+  width: min(520px, 100%);
+  margin-top: calc(-1 * var(--s-8));
+}
+
+/* Formas de pago: lista, no tabla. Son cuatro renglones y lo único que
+   importa es el importe, así que se alinean a la derecha y se leen en
+   vertical de un tirón. */
+.methods {
+  display: flex;
+  flex-direction: column;
+}
+
+.method-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.method-row:last-child {
+  border-bottom: 0;
+}
+
+.method-row__name {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+}
+
+.method-row__amount {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cash__difference {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  border-radius: var(--radius);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VENTAS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sales__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-5);
+}
+
+.sales__filters .search {
+  flex: 1;
+  min-width: 260px;
+}
+
+.sales__filter-select {
+  width: auto;
+  min-width: 190px;
+}
+
+.folio {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+.sale-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--s-6);
+  align-items: start;
+}
+
+.sale-detail__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--s-6));
+}
+
+.sale-detail__meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-3) var(--s-5);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-base);
+}
+
+.meta-row:last-child {
+  border-bottom: 0;
+}
+
+.meta-row__label {
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.meta-row__value {
+  font-weight: var(--weight-medium);
+  text-align: right;
+}
+
+.sale-detail__totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+}
+
+.sale-detail__total-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  font-size: var(--text-base);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.sale-detail__total-row--grand {
+  margin-top: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border-strong);
+  color: var(--text);
+}
+
+.sale-detail__total-row--grand .sale-detail__amount {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+}
+
+/* Zona preparada para reimpresión, cancelación y devolución. Se pinta
+   deshabilitada a propósito: la operación todavía no existe en el servidor y
+   un botón que no hace nada es peor que un botón que dice que aún no está. */
+.future-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-5);
+}
+
+.future-actions .btn {
+  justify-content: flex-start;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACCESO
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.login-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--s-6);
+  background: var(--brand-navy);
+}
+
+.login {
+  width: min(420px, 100%);
+  overflow: hidden;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+}
+
+/* Cabecera del acceso: el logotipo sobre su azul, separado del formulario
+   por una línea turquesa. */
+.login__brand {
+  display: grid;
+  place-items: center;
+  padding: var(--s-7) var(--s-7) var(--s-6);
+  border-bottom: 3px solid var(--brand-teal);
+}
+
+.login__logo {
+  display: block;
+  width: 230px;
+  max-width: 100%;
+  height: auto;
+}
+
+.login__head {
+  padding: var(--s-6) var(--s-7) 0;
+}
+
+.login__title {
+  display: block;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.login__hint {
+  display: block;
+  margin-top: var(--s-1);
+  color: var(--text-3);
+  font-size: var(--text-sm);
+}
+
+.login__form {
+  padding: var(--s-5) var(--s-7) var(--s-7);
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.loading-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  gap: var(--s-3);
+  color: var(--text-3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PANTALLAS ESTRECHAS
+
+   Prioridad declarada: escritorio y portátil. Por debajo de 1100px el ticket
+   se estrecha; por debajo de 900px baja bajo el catálogo pero NO desaparece,
+   y el pie con el total queda pegado al fondo para que cobrar siga siendo un
+   gesto y no una búsqueda.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1240px) {
+  :root {
+    --ticket-w: 360px;
+  }
+
+  .cash,
+  .sale-detail {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+@media (max-width: 1040px) {
+  .cash,
+  .sale-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* En una sola columna manda la prioridad, no el orden del marcado: el
+     efectivo esperado y el cierre —y el total de la venta— pasan por delante
+     de las tablas. Apiladas tal cual, el dato del corte acababa por debajo de
+     todos los movimientos del turno. */
+  .cash__side,
+  .sale-detail__side {
+    position: static;
+    order: -1;
+  }
+}
+
+/* La barra superior se mantiene SIEMPRE en una sola fila de 64px, porque
+   `--topbar-h` es el desplazamiento del que dependen el alto de la pantalla de
+   venta y el pegado del buscador. En vez de dejarla envolver, se van soltando
+   piezas por orden de importancia: primero el usuario, después el importe del
+   distintivo. Lo que nunca se suelta es el nombre de la sección, que antes
+   quedaba tapado por el distintivo a 768px. */
+@media (max-width: 1100px) {
+  .who,
+  .topbar__divider {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .pos {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .catalog {
+    overflow: visible;
+  }
+
+  .catalog__head {
+    position: sticky;
+    top: var(--topbar-h);
+    z-index: 10;
+  }
+
+  .catalog__body {
+    overflow: visible;
+  }
+
+  .ticket {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Flotando sobre el catálogo necesita separarse de lo que pasa por debajo. */
+  .ticket__foot {
+    position: sticky;
+    bottom: 0;
+    box-shadow: 0 -4px 12px rgb(15 24 38 / 0.08);
+  }
+
+  .badge__detail {
+    display: none;
+  }
+
+  /* Aquí las categorías ya no caben y la tira se desplaza. El desvanecido del
+     borde es lo que avisa de que hay más a la derecha: sin él, el último chip
+     parece cortado por un error de maquetación. */
+  .catalog__filters {
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  }
+
+  .brand {
+    padding-right: var(--s-4);
+  }
+
+  .brand__name,
+  .brand__logo {
+    display: none;
+  }
+
+  .brand__symbol {
+    display: block;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    padding: 0 var(--s-3);
+    gap: var(--s-3);
+  }
+
+  .nav__item {
+    padding: 0 var(--s-3);
+    font-size: var(--text-base);
+  }
+
+  .page {
+    padding: var(--s-5) var(--s-4) var(--s-8);
+  }
+
+  .receipt__meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IMPRESIÓN
+
+   Se imprime SOLO el ticket. Con una impresora de tickets instalada como
+   impresora del sistema esto ya sale bien; el día que haya que hablar ESC/POS
+   con una comandera, el punto de entrada es el mismo bloque marcado.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* El ticket de papel vive en un portal y en pantalla no existe. */
+.print-ticket {
+  display: none;
+}
+
+@page {
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000;
+    margin: 0;
+  }
+
+  /* Al imprimir, lo único que existe es el ticket de papel. */
+  body > *:not(.print-ticket) {
+    display: none !important;
+  }
+
+  .print-ticket {
+    display: block;
+    width: 72mm;
+    padding: 2mm 3mm;
+    font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: #000;
+  }
+
+  html[data-paper='58'] .print-ticket {
+    width: 48mm;
+    padding: 1mm 2mm;
+    font-size: 10px;
+  }
+
+  .print-ticket p {
+    margin: 0;
+  }
+
+  .pt-head {
+    text-align: center;
+    margin-bottom: 2mm;
+  }
+
+  .pt-title {
+    font-size: 1.35em;
+    font-weight: 700;
+  }
+
+  .pt-meta > div,
+  .pt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 2mm;
+  }
+
+  .pt-meta > div > span:first-child {
+    flex: none;
+  }
+
+  .pt-meta > div > :last-child,
+  .pt-row > :last-child {
+    text-align: right;
+  }
+
+  .pt-rule {
+    border-top: 1px dashed #000;
+    margin: 1.5mm 0;
+  }
+
+  .pt-item {
+    margin-bottom: 1mm;
+  }
+
+  .pt-item__name {
+    font-weight: 600;
+  }
+
+  .pt-total {
+    font-size: 1.3em;
+    font-weight: 700;
+    margin-top: 1mm;
+  }
+
+  .pt-strong {
+    font-weight: 700;
+  }
+
+  .pt-muted {
+    color: #333;
+  }
+
+  .pt-center {
+    text-align: center;
+  }
+
+  .pt-barcode {
+    margin-top: 2mm;
+    font-size: 1.2em;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+  }
+}
+
+/* ── Ticket: cliente, herramientas y descuentos ───────────────────────────── */
+.ticket__customer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: 0;
+  padding: var(--s-3) var(--s-5);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ticket__customer:hover {
+  background: var(--primary-soft);
+}
+
+.ticket__customer-name {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  font-weight: var(--weight-medium);
+}
+
+.ticket__tools {
+  display: flex;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.ticket__tools .btn {
+  flex: 1;
+  justify-content: center;
+  padding-inline: var(--s-2);
+  font-size: var(--text-sm);
+}
+
+.ticket__tools .kbd {
+  display: none;
+}
+
+@media (min-width: 1400px) {
+  .ticket__tools .kbd {
+    display: inline-flex;
+  }
+}
+
+.line__discount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+  font-size: var(--text-sm);
+  color: var(--positive);
+}
+
+/* ── Cobro: pago mixto ───────────────────────────────────────────────────── */
+.pay__customer {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  font-weight: var(--weight-medium);
+}
+
+.pay__partials {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.pay__partials .method-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+}
+
+.pay__partials .method-row__name {
+  flex: 1;
+}
+
+.pay__split {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.pay__split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+.pay__split-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}

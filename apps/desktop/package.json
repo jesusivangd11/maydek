@@ -1,0 +1,21 @@
+{
+  "name": "@pv/desktop",
+  "productName": "Maydek",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Maydek — punto de venta de escritorio (Electron, base de datos local)",
+  "main": "src/main.cjs",
+  "scripts": {
+    "prepare:ui": "node scripts/build-ui.mjs",
+    "start": "electron .",
+    "dev": "node scripts/build-ui.mjs && electron .",
+    "typecheck": "echo ok",
+    "lint": "echo ok",
+    "test": "node --test test/",
+    "clean": "rimraf build .turbo"
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "rimraf": "^6.0.1"
+  }
+}

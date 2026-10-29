@@ -1,0 +1,63 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Compilados
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Variables de entorno — NUNCA se versionan (solo los .example)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+!.env.test
+!.env.production.example
+
+# Secretos fiscales (CSD) — jamás en el repositorio
+*.cer
+*.key
+!**/prisma/**/*.key
+secrets/
+
+# Prisma
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+
+# Pruebas y cobertura
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Datos locales de Docker
+infra/data/
+
+# Clúster de PostgreSQL local, por si se apunta PV_POSTGRES_HOME al repo
+# (no es lo normal: por defecto va a %LOCALAPPDATA%, fuera de OneDrive)
+.local-postgres/
+
+# Editor / SO
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.recommended.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Cookies de sesión de pruebas manuales con curl
+*cookies*.txt
+
+# Vínculo local con el proyecto de Vercel
+.vercel/

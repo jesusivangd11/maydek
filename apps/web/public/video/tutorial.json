@@ -1,0 +1,41 @@
+{
+  "duration": 153,
+  "chapters": [
+    {
+      "title": "Iniciar sesión",
+      "start": 9.3
+    },
+    {
+      "title": "Abrir la caja",
+      "start": 16.2
+    },
+    {
+      "title": "Vender",
+      "start": 24
+    },
+    {
+      "title": "Cobrar",
+      "start": 36.2
+    },
+    {
+      "title": "Cliente de mayoreo",
+      "start": 54.3
+    },
+    {
+      "title": "Ventas y devoluciones",
+      "start": 70.5
+    },
+    {
+      "title": "Corte de caja",
+      "start": 90.4
+    },
+    {
+      "title": "Administración",
+      "start": 101.7
+    },
+    {
+      "title": "Respaldos y soporte",
+      "start": 132.7
+    }
+  ]
+}

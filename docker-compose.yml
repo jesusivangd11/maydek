@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Infraestructura local — Fase 1
+#
+#  Deliberadamente mínima: solo PostgreSQL. Redis queda declarado bajo el perfil
+#  "queue" y NO arranca por defecto; se activa en la Fase 10, cuando los webhooks
+#  y las colas lo necesiten de verdad.
+#
+#      docker compose up -d postgres          # lo normal
+#      docker compose --profile queue up -d   # cuando llegue la Fase 10
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: pv_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pv_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:-punto_venta}
+      # Español de México para ordenamientos y mensajes coherentes con el negocio
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+      TZ: UTC
+      PGTZ: UTC
+      # Los consume infra/postgres/init/02-app-role.sh para crear el rol
+      # restringido con el que corre la aplicación.
+      APP_DB_USER: ${APP_DB_USER:-pv_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?falta APP_DB_PASSWORD en .env}
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - pv_pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    command:
+      # Ajustes pensados para una tienda: pocas conexiones, transacciones cortas.
+      - postgres
+      - -c
+      - max_connections=100
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - work_mem=8MB
+      # Un bloqueo que no se obtiene en 3 s falla con error claro en vez de
+      # colgar la caja indefinidamente (ver docs/07-concurrencia.md).
+      - -c
+      - lock_timeout=3s
+      - -c
+      - statement_timeout=10s
+      - -c
+      - idle_in_transaction_session_timeout=30s
+      - -c
+      - log_min_duration_statement=500
+      - -c
+      - timezone=UTC
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-pv_owner} -d ${POSTGRES_DB:-punto_venta}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # ── NO arranca por defecto. Fase 10. ──
+  redis:
+    image: redis:7-alpine
+    container_name: pv_redis
+    restart: unless-stopped
+    profiles: ['queue']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - pv_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pv_pgdata:
+    name: pv_pgdata
+  pv_redisdata:
+    name: pv_redisdata

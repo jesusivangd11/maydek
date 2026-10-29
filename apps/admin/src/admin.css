@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PANEL DE ADMINISTRACIÓN
+   Solo lo propio del panel: el resto viene del sistema de diseño del POS.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.admin {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+.admin__nav {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  padding: var(--s-5) var(--s-4);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.admin__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-2) var(--s-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin__logo {
+  display: block;
+  width: 168px;
+  height: auto;
+}
+
+/* En el menú azul marino el botón secundario no puede ser blanco. */
+.admin__nav .btn--secondary {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.admin__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.admin__link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  min-height: 40px;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+.admin__link:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.admin__link[aria-current='page'] {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.admin__foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+}
+
+.admin__who {
+  padding: 0 var(--s-2);
+}
+
+.admin__content {
+  min-width: 0;
+}
+
+.admin__content .page {
+  max-width: 1320px;
+}
+
+/* ── Barra de herramientas sobre las tablas ──────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-5);
+}
+
+.toolbar .search {
+  flex: 1 1 280px;
+  max-width: 420px;
+}
+
+.toolbar__spacer {
+  flex: 1;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--s-1);
+  margin-bottom: var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs__item {
+  padding: var(--s-3) var(--s-4);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.tabs__item[aria-selected='true'] {
+  border-bottom-color: var(--primary);
+  color: var(--primary-text);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.cell-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+.table td .badge + .badge {
+  margin-left: var(--s-1);
+}
+
+.input--sm {
+  height: 34px;
+  padding: 0 var(--s-2);
+}
+
+.num-input {
+  width: 110px;
+  text-align: right;
+}
+
+/* ── Gráfica de barras (ventas por día) ───────────────────────────────────── */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 200px;
+  padding: var(--s-4) var(--s-4) 0;
+}
+
+.bars__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 100%;
+  min-width: 0;
+}
+
+.bars__bar {
+  width: 100%;
+  max-width: 34px;
+  min-height: 2px;
+  background: var(--primary);
+  border-radius: 4px 4px 0 0;
+}
+
+.bars__col:hover .bars__bar {
+  background: var(--primary-hover);
+}
+
+.bars__label {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.meter {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.meter__fill {
+  height: 100%;
+  background: var(--primary);
+}
+
+/* ── Buscador de artículos ───────────────────────────────────────────────── */
+.variant-picker {
+  position: relative;
+}
+
+.variant-picker__results {
+  position: absolute;
+  z-index: 20;
+  inset: calc(100% + 4px) 0 auto 0;
+  margin: 0;
+  padding: var(--s-1);
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.variant-picker__results button {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.variant-picker__results button:hover {
+  background: var(--primary-soft);
+}
+
+.ticket-msg {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 960px) {
+  .admin {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin__nav {
+    position: static;
+    height: auto;
+  }
+
+  .admin__menu {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.check input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+}
+
+.role-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  margin: 0;
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.textarea {
+  height: auto;
+  min-height: 110px;
+  padding: var(--s-3);
+  resize: vertical;
+  font: inherit;
+  line-height: var(--leading-normal);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.section-label {
+  margin: var(--s-3) 0 0;
+}

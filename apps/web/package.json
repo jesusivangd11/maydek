@@ -1,0 +1,20 @@
+{
+  "name": "@pv/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Página web pública: funciones, precios, soporte y contacto.",
+  "scripts": {
+    "dev": "vite --port 5175",
+    "build": "vite build",
+    "preview": "vite preview --port 5175",
+    "typecheck": "echo ok",
+    "lint": "echo ok",
+    "test": "echo \"(sin pruebas unitarias: sitio estático)\"",
+    "clean": "rimraf dist .turbo"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "vite": "^6.0.7"
+  }
+}

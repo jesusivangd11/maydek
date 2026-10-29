@@ -1,0 +1,7 @@
+{
+  "name": "@pv/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": ["tsconfig.base.json", "tsconfig.node.json", "tsconfig.react.json"],
+  "scripts": { "lint": "echo ok", "typecheck": "echo ok", "test": "echo ok", "build": "echo \"(sin compilación: solo archivos de configuración)\"", "clean": "echo ok" }
+}

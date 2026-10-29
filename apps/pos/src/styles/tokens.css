@@ -1,0 +1,202 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS
+
+   Única fuente de verdad del diseño. Ningún otro archivo escribe un color,
+   un tamaño de letra o una medida en crudo: si algo no se puede expresar con
+   un token de aquí, es que falta el token.
+
+   Esa regla es la que hace que el tema oscuro salga gratis —abajo solo se
+   redefinen valores, nunca reglas— y la que impide que Vender, Caja y Ventas
+   se vayan separando con el tiempo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Color ──────────────────────────────────────────────────────────────
+     Neutros fríos. La escala de grises tiene un punto de azul para que el
+     blanco de las superficies se lea como blanco y no como beige al lado del
+     fondo.
+
+     El reparto es deliberado y NO se negocia por pantalla:
+       · turquesa = acción. Lo que el cajero pulsa (el turquesa de Maydek,
+                    oscurecido para que el texto blanco se lea).
+       · verde    = estado positivo. Caja abierta, cambio, arqueo que cuadra.
+       · ámbar    = atención. Existencia por debajo del mínimo.
+       · rojo     = error o bloqueo. Agotado, faltante, fallo de cobro.
+
+     El turquesa tira a azul y el verde a hierba a propósito: "esto se pulsa"
+     y "esto va bien" no se pueden confundir.
+
+     Marca Maydek: azul marino (fondo del logotipo) para la barra de
+     navegación, turquesa y durazno del símbolo como acentos.
+     ──────────────────────────────────────────────────────────────────────── */
+  --brand-navy: #121f3e;
+  --brand-navy-2: #1a2a52;
+  --brand-teal: #1ee3cc;
+  --brand-peach: #f7a985;
+
+  --bg: #eceff4;
+  --surface: #ffffff;
+  --surface-2: #f5f7fa;
+  --surface-3: #eef1f6;
+  --surface-inset: #f8fafc;
+
+  --border: #dde2ea;
+  --border-strong: #c2cad6;
+  --border-heavy: #9aa5b4;
+
+  --text: #0f1826;
+  --text-2: #4a5567;
+  --text-3: #7d8799;
+  --text-on-solid: #ffffff;
+
+  --primary: #0d7a83;
+  --primary-hover: #0a666e;
+  --primary-active: #08545b;
+  --primary-soft: #e2f5f5;
+  --primary-soft-2: #c8ecec;
+  --primary-text: #0a6870;
+
+  --positive: #2e7d32;
+  --positive-soft: #e6f4e7;
+  --positive-border: #b3dbb5;
+
+  --warning: #92600a;
+  --warning-soft: #fdf1dc;
+  --warning-border: #e8cd97;
+
+  --danger: #b3251c;
+  --danger-hover: #971d16;
+  --danger-soft: #fdeceb;
+  --danger-border: #edb7b3;
+
+  --focus: #13a6b2;
+
+  /* ── Tipografía ─────────────────────────────────────────────────────────
+     La escala arranca en 15px, no en 13. El sistema lo usa un cajero de pie
+     mirando un monitor a medio metro, y "cabe" nunca fue razón suficiente
+     para encoger un precio.
+
+     Plex Sans se carga autohospedada (`@fontsource`): una tienda puede
+     quedarse sin internet y la caja no puede quedarse sin tipografía.
+     ──────────────────────────────────────────────────────────────────────── */
+  --font-sans: 'IBM Plex Sans Variable', 'IBM Plex Sans', 'Segoe UI Variable Text',
+    'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --text-xs: 13px;    /* mínimo del sistema: rótulos en versalitas y teclas */
+  --text-sm: 13.5px;  /* metadatos, ayudas */
+  --text-base: 15.5px;/* cuerpo, celdas, controles */
+  --text-md: 17px;    /* nombre de producto, celdas importantes */
+  --text-lg: 20px;    /* precio, valor de indicador */
+  --text-xl: 24px;    /* título de sección */
+  --text-2xl: 28px;   /* título de pantalla */
+  --text-3xl: 34px;   /* total del ticket */
+  --text-4xl: 52px;   /* cambio a entregar: lo más grande del sistema */
+
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.55;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --tracking-caps: 0.07em;
+
+  /* ── Espaciado ──────────────────────────────────────────────────────────
+     Escala de 4. Todo margen y todo relleno sale de aquí, que es lo que
+     evita el "casi alineado" de sumar números a ojo.
+     ──────────────────────────────────────────────────────────────────────── */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 48px;
+  --s-10: 64px;
+
+  /* ── Forma ──────────────────────────────────────────────────────────────
+     Radios moderados. Un POS no es una landing: el redondeo sirve para que
+     el objetivo se lea como pulsable, no para decorar.
+     ──────────────────────────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius: 7px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Sombras casi invisibles. Solo separan planos que de verdad flotan:
+     la barra superior sobre el contenido, el modal sobre todo lo demás. */
+  --shadow-sm: 0 1px 2px rgb(15 24 38 / 0.05);
+  --shadow: 0 1px 3px rgb(15 24 38 / 0.07), 0 1px 2px rgb(15 24 38 / 0.04);
+  --shadow-lg: 0 12px 32px rgb(15 24 38 / 0.14), 0 2px 8px rgb(15 24 38 / 0.08);
+
+  /* ── Medidas de la interfaz ─────────────────────────────────────────── */
+  --topbar-h: 64px;
+  --ticket-w: 400px;
+  --control-h: 40px;
+  --control-h-lg: 48px;
+  --control-h-xl: 60px;
+
+  --transition: 120ms ease;
+
+  color-scheme: light;
+}
+
+/* ── Tema oscuro ──────────────────────────────────────────────────────────
+   Mismo diseño, distinto papel. Solo valores: si aquí abajo hiciera falta
+   escribir una regla nueva, sería señal de que algo arriba está usando color
+   en crudo.
+
+   El primario y el positivo suben de luminosidad porque sobre fondo oscuro
+   los tonos de tinta impresa se apagan y dejan de leerse como acción.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1226;
+    --surface: #121b33;
+    --surface-2: #17213c;
+    --surface-3: #1d2846;
+    --surface-inset: #0e162d;
+
+    --border: #263252;
+    --border-strong: #364368;
+    --border-heavy: #4f5d83;
+
+    --text: #e8edf6;
+    --text-2: #a7b2c9;
+    --text-3: #7b87a2;
+    --text-on-solid: #ffffff;
+
+    --primary: #128f99;
+    --primary-hover: #17a3ad;
+    --primary-active: #1bb5bf;
+    --primary-soft: #0f2c3a;
+    --primary-soft-2: #143a4a;
+    --primary-text: #5fe3d4;
+
+    --positive: #4caf50;
+    --positive-soft: #13261a;
+    --positive-border: #275232;
+
+    --warning: #d9a341;
+    --warning-soft: #241c0e;
+    --warning-border: #4d3c1c;
+
+    --danger: #ef6a5d;
+    --danger-hover: #f27f73;
+    --danger-soft: #271312;
+    --danger-border: #552823;
+
+    --focus: #2fd8c8;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow: 0 1px 3px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.4);
+
+    color-scheme: dark;
+  }
+}

@@ -1,0 +1,1025 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPONENTES
+
+   Las piezas que se repiten en Vender, Caja y Ventas. Una pantalla no define
+   su propio botón ni su propia tabla: si las tres necesitan algo parecido,
+   vive aquí y se usa igual en las tres. Es lo único que consigue que el
+   sistema se sienta como un sistema y no como tres aplicaciones pegadas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Botón ────────────────────────────────────────────────────────────────
+   Cuatro tonos y cuatro tamaños. `xl` es de bloque y existe para una sola
+   cosa: la acción principal de una pantalla —cobrar, abrir caja, cerrar—,
+   que siempre ocupa todo el ancho de su columna y siempre está en el mismo
+   sitio. Que el cajero no tenga que buscarla es medio segundo por venta.
+   ─────────────────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  height: var(--control-h);
+  padding: 0 var(--s-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition),
+    color var(--transition);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Primario: azul sólido. Es la acción, y en una pantalla solo hay una. */
+.btn--primary {
+  background: var(--primary);
+  color: var(--text-on-solid);
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+.btn--primary:active:not(:disabled) {
+  background: var(--primary-active);
+}
+.btn--primary:disabled {
+  /* Deshabilitado NO es "el mismo botón translúcido": pierde el color de
+     acción y se vuelve superficie. Así se distingue de un vistazo, incluso
+     de reojo, que todavía no hay nada que cobrar. */
+  background: var(--surface-3);
+  color: var(--text-3);
+  border-color: var(--border);
+}
+
+/* Secundario: la salida, el volver, el cancelar. */
+.btn--secondary {
+  background: var(--surface);
+  color: var(--text-2);
+  border-color: var(--border-strong);
+}
+.btn--secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-heavy);
+}
+.btn--secondary:disabled {
+  color: var(--text-3);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+/* Sutil: acciones de servicio dentro de un panel (vaciar, quitar). */
+.btn--subtle {
+  background: transparent;
+  color: var(--text-2);
+}
+.btn--subtle:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.btn--subtle:disabled {
+  color: var(--text-3);
+}
+
+/* Peligro: solo para lo que cierra o revierte dinero. */
+.btn--danger {
+  background: var(--danger);
+  color: var(--text-on-solid);
+}
+.btn--danger:hover:not(:disabled) {
+  background: var(--danger-hover);
+}
+.btn--danger:disabled {
+  background: var(--surface-3);
+  color: var(--text-3);
+  border-color: var(--border);
+}
+
+.btn--sm {
+  height: 32px;
+  padding: 0 var(--s-3);
+  font-size: var(--text-sm);
+}
+
+.btn--lg {
+  height: var(--control-h-lg);
+  padding: 0 var(--s-5);
+  font-size: var(--text-md);
+}
+
+.btn--xl {
+  width: 100%;
+  height: var(--control-h-xl);
+  padding: 0 var(--s-5);
+  font-size: var(--text-md);
+  border-radius: var(--radius-lg);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* La tecla vive DENTRO del botón, en tono apagado. Se aprende sin leerla y
+   no compite con la etiqueta. */
+.btn__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 0.18);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+.btn--secondary .btn__key,
+.btn--subtle .btn__key,
+.btn:disabled .btn__key {
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+
+/* ── Tecla suelta ─────────────────────────────────────────────────────────── */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+
+/* ── Campos ───────────────────────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-2);
+}
+
+.field__hint {
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+.input {
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-base);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--border-heavy);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.input:disabled {
+  background: var(--surface-2);
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+/* Importes: grandes y tabulares. Se teclean mirando al cliente, no a la
+   pantalla, así que el número tiene que reconocerse de reojo. */
+.input--amount {
+  height: var(--control-h-lg);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.input--lg {
+  height: var(--control-h-lg);
+  font-size: var(--text-md);
+}
+
+.select {
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 var(--s-7) 0 var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-base);
+  cursor: pointer;
+  appearance: none;
+  /* Cheurón dibujado con gradientes: sin petición de red y sin SVG externo,
+     que en una caja sin internet es la diferencia entre verlo y no verlo. */
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-3) 50%),
+    linear-gradient(135deg, var(--text-3) 50%, transparent 50%);
+  background-position: calc(100% - 17px) calc(50% + 1px), calc(100% - 12px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.select:hover {
+  border-color: var(--border-heavy);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+/* ── Buscador ─────────────────────────────────────────────────────────────
+   El punto de entrada del POS. Alto, con lupa y con su tecla a la vista: es
+   donde vive el foco entre operación y operación.
+   ─────────────────────────────────────────────────────────────────────────── */
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search__icon {
+  position: absolute;
+  left: var(--s-4);
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.search__input {
+  width: 100%;
+  height: var(--control-h-xl);
+  padding: 0 120px 0 52px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-md);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.search__input:hover {
+  border-color: var(--border-heavy);
+}
+
+.search__input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.search__input:focus + .search__icon,
+.search:focus-within .search__icon {
+  color: var(--primary);
+}
+
+.search__tail {
+  position: absolute;
+  right: var(--s-4);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  pointer-events: none;
+}
+
+/* Variante compacta: buscar un folio en Ventas no merece 60px de alto. */
+.search--compact .search__input {
+  height: var(--control-h-lg);
+  padding: 0 var(--s-4) 0 44px;
+  font-size: var(--text-base);
+  border-radius: var(--radius);
+}
+
+.search--compact .search__icon {
+  left: var(--s-3);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Distintivo de estado ─────────────────────────────────────────────────
+   Color con significado, nunca decorativo. El punto de delante hace que el
+   estado se lea sin depender del color, que es lo que necesita quien no
+   distingue verde de rojo.
+   ─────────────────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 26px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.badge--bare::before {
+  display: none;
+}
+
+.badge--positive {
+  background: var(--positive-soft);
+  border-color: var(--positive-border);
+  color: var(--positive);
+}
+
+.badge--warning {
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+  color: var(--warning);
+}
+
+.badge--danger {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.badge--info {
+  background: var(--primary-soft);
+  border-color: var(--primary-soft-2);
+  color: var(--primary-text);
+}
+
+.badge__detail {
+  font-variant-numeric: tabular-nums;
+}
+
+.badge--lg {
+  height: 32px;
+  padding: 0 var(--s-4);
+  font-size: var(--text-base);
+}
+
+/* ── Tarjeta / panel ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.card__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.card__body {
+  padding: var(--s-5);
+}
+
+.card__body--flush {
+  padding: 0;
+}
+
+/* ── Encabezado de pantalla ───────────────────────────────────────────────── */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-5);
+}
+
+.page-head__title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.page-head__sub {
+  margin-top: var(--s-1);
+  font-size: var(--text-base);
+  color: var(--text-2);
+}
+
+.page-head__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+/* Rótulo de sección. En mayúsculas y pequeño, pero con una regla que lo
+   ancla: separa bloques sin gastar un título de 24px en cada uno. */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Indicador ────────────────────────────────────────────────────────────── */
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.stat__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-3);
+}
+
+.stat__value {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.stat__value--sm {
+  font-size: var(--text-lg);
+}
+
+.stat__foot {
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+/* El indicador que manda en su pantalla: borde de acento y fondo teñido.
+   Se usa UNA vez por pantalla —el efectivo esperado en Caja— o deja de
+   significar nada. */
+.stat--key {
+  background: var(--primary-soft);
+  border-color: var(--primary-soft-2);
+}
+
+.stat--key .stat__label {
+  color: var(--primary-text);
+}
+
+.stat--key .stat__value {
+  color: var(--primary-text);
+  font-size: var(--text-3xl);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--s-4);
+}
+
+/* ── Control segmentado ───────────────────────────────────────────────────
+   Para elegir entre pocas opciones excluyentes: forma de pago, rango de
+   fechas, entrada/salida. Sustituye a los botones sueltos que antes cambiaban
+   de aspecto en cada pantalla.
+   ─────────────────────────────────────────────────────────────────────────── */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.segmented--block {
+  display: flex;
+  width: 100%;
+}
+
+.segmented__item {
+  flex: 1;
+  height: 34px;
+  padding: 0 var(--s-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.segmented__item:hover:not(:disabled):not([aria-pressed='true']) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.segmented__item[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-sm);
+}
+
+.segmented__item:disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.segmented--lg .segmented__item {
+  height: 42px;
+  font-size: var(--text-md);
+}
+
+/* ── Tablas ───────────────────────────────────────────────────────────────
+   Filas altas y texto de cuerpo. Una tabla de caja se lee en diagonal
+   buscando un importe: apretarla a 13px la vuelve inútil.
+   ─────────────────────────────────────────────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-base);
+}
+
+.table th {
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--s-4);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table--roomy td {
+  padding: var(--s-4) var(--s-4);
+  height: 64px;
+}
+
+.table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.table__money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: var(--weight-semibold);
+}
+
+.table__money--strong {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+
+.table__row--clickable {
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.table__row--clickable:hover td {
+  background: var(--primary-soft);
+}
+
+.table__row--clickable:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.table tfoot td {
+  background: var(--surface-2);
+  font-weight: var(--weight-medium);
+}
+
+.table tfoot .table__total td {
+  border-top: 2px solid var(--border-heavy);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+}
+
+/* ── Estado vacío ─────────────────────────────────────────────────────────
+   Un hueco en blanco no dice nada. Un estado vacío dice qué falta y qué
+   hacer a continuación, que es lo que necesita alguien que acaba de entrar.
+   ─────────────────────────────────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  padding: var(--s-9) var(--s-6);
+  text-align: center;
+  color: var(--text-3);
+}
+
+.empty__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+
+.empty__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-2);
+}
+
+.empty__text {
+  max-width: 34ch;
+  font-size: var(--text-base);
+  color: var(--text-3);
+}
+
+.empty--boxed {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+/* ── Avisos ───────────────────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+}
+
+.alert--warning {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.alert__icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* ── Modal ────────────────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--s-5);
+  background: rgb(9 14 22 / 0.55);
+  backdrop-filter: blur(2px);
+  animation: overlay-in 120ms ease-out;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.modal {
+  width: min(520px, 100%);
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: modal-in 140ms ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.modal__body {
+  padding: var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.modal__foot {
+  padding: var(--s-5);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* ── Utilidades ───────────────────────────────────────────────────────────── */
+.muted {
+  color: var(--text-2);
+}
+
+.subtle {
+  color: var(--text-3);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.text-sm {
+  font-size: var(--text-sm);
+}
+
+.center {
+  text-align: center;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Corte a N líneas para nombres de producto largos: recorta con puntos
+   suspensivos en vez de romper la altura de la tarjeta. */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.stack--tight {
+  gap: var(--s-3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.row--between {
+  justify-content: space-between;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Piezas de los diálogos de mostrador ─────────────────────────────────── */
+.modal--wide {
+  width: min(860px, 100%);
+}
+
+.modal__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.modal__summary {
+  margin-right: auto;
+  color: var(--text-2);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--s-4);
+}
+
+.form-grid--3 {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.form-grid .field--wide {
+  grid-column: 1 / -1;
+}
+
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.link-button:disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+}
+
+.toast {
+  margin: 0 0 var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-weight: var(--weight-medium);
+}
+
+.pick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  max-height: 46dvh;
+  overflow-y: auto;
+}
+
+.pick-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.pick-list__item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pick-list__item:hover,
+.pick-list__item[aria-selected='true'] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.pick-list__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pick-list__side {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: none;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+}
+
+.stepper--sm .stepper__btn {
+  width: 30px;
+  height: 30px;
+}
+
+.stepper--sm .stepper__qty {
+  width: 44px;
+  height: 30px;
+}

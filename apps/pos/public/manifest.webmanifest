@@ -1,0 +1,16 @@
+{
+  "name": "Maydek · Punto de venta",
+  "short_name": "Maydek",
+  "description": "Caja, ventas, devoluciones y corte de Maydek.",
+  "lang": "es-MX",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#121f3e",
+  "theme_color": "#121f3e",
+  "icons": [
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
