@@ -26,6 +26,7 @@ const paths = require('./paths.cjs');
 const store = require('./config.cjs');
 const db = require('./database.cjs');
 const services = require('./services.cjs');
+const updates = require('./updates.cjs');
 
 /** Mismos datos que la página web (apps/web/src/config.js). */
 const SUPPORT = {
@@ -58,7 +59,10 @@ if (!app.requestSingleInstanceLock()) {
       win.focus();
     }
   });
-  app.whenReady().then(boot);
+  app.whenReady().then(() => {
+    updates.start(trace);
+    return boot();
+  });
 }
 
 // ── Ventanas ─────────────────────────────────────────────────────────────────
@@ -547,6 +551,7 @@ function buildMenu() {
               detail:
                 `Punto de venta, inventario y administración.\n` +
                 `Datos: ${paths.dataDir}\n` +
+                (updates.pending() ? `Versión ${updates.pending()} lista: se instala al cerrar.\n` : '') +
                 (config?.mode === 'client' ? `Caja principal: ${config.serverUrl}` : ''),
             }),
         },
@@ -584,10 +589,16 @@ async function shutdown() {
 // `window-all-closed`). Todas se frenan hasta que la base quede detenida; si
 // una sola pasara, el proceso saldría con PostgreSQL todavía encendido.
 let shutdownPromise = null;
+let stopped = false;
 app.on('before-quit', (event) => {
+  // Ya detenida la base, el instalador de la actualización pide salir: se deja.
+  if (stopped) return;
   event.preventDefault();
   quitting = true;
-  shutdownPromise ??= shutdown().finally(() => app.exit(0));
+  shutdownPromise ??= shutdown().finally(() => {
+    stopped = true;
+    if (!updates.installIfReady()) app.exit(0);
+  });
 });
 
 // Apagado o reinicio de Windows con la app abierta: se detiene la base a

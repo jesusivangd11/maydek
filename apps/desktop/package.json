@@ -12,10 +12,15 @@
     "typecheck": "echo ok",
     "lint": "echo ok",
     "test": "node --test test/",
-    "clean": "rimraf build .turbo"
+    "clean": "rimraf build .turbo",
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
     "rimraf": "^6.0.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }
