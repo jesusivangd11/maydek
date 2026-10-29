@@ -3,6 +3,9 @@
 Sistema central para distribuidora de fajas colombianas. **Fuente única de verdad** del
 inventario, con API para conectar la página web existente y futuros canales.
 
+Sitio público: **https://maydek.vercel.app** (`apps/web`; Vercel lo publica solo con cada
+push a `main`).
+
 > **Estado: Fase 1 (Cimientos) CERRADA y verificada.**
 > Lint, compilación y tipos en verde · **79 pruebas unitarias** · **76 pruebas de
 > integración contra PostgreSQL 17.2 real** · migraciones y seed desde base vacía ·
