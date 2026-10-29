@@ -35,9 +35,10 @@ export const SITE = {
 
   /** Instalador para Windows. Vacío = el botón pide el instalador por ticket. */
   download: {
-    url: '',
+    // Siempre apunta a la versión más reciente publicada en maydek-releases.
+    url: 'https://github.com/jesusivangd11/maydek-releases/releases/latest/download/Maydek-Setup.exe',
     version: '1.0.0',
-    size: '',
+    size: '198 MB',
   },
 
   /** Precios en MXN con IVA incluido. El anual se cobra como 10 meses. */
