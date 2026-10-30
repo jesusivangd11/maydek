@@ -670,6 +670,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Cobrar imprimiendo / sin imprimir: dos botones del mismo tamaño. */
+.pay__confirm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+.pay__confirm .btn {
+  padding-inline: var(--s-3);
+  white-space: normal;
+  line-height: 1.15;
+}
+
 .quick-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));

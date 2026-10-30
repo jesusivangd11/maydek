@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '@pos/lib/api';
+import { ProfitBreakdown } from '@pos/components/ProfitBreakdown';
 import { formatDateTime, formatMoney, toNumber } from '@pos/lib/format';
 import { Alert, Badge, Button, Card, EmptyState, Modal, PageHeader } from '@pos/ui';
 import type { ScreenProps } from '../App';
@@ -170,6 +171,7 @@ function SessionDialog({ id, onClose }: { id: string; onClose: () => void }) {
                 ))}
               </div>
             </Card>
+            {s.profit && <ProfitBreakdown profit={s.profit} />}
           </div>
         </>
       )}

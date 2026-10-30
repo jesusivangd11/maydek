@@ -500,6 +500,7 @@ async function seedUsers(branchId: string): Promise<void> {
 
   const users = [
     {
+      username: 'cajero',
       email: 'cajero@distribuidora.local',
       name: 'Carla Cajera',
       role: 'CASHIER',
@@ -507,6 +508,7 @@ async function seedUsers(branchId: string): Promise<void> {
       pin: '2345',
     },
     {
+      username: 'gerente',
       email: 'gerente@distribuidora.local',
       name: 'Gerardo Gerente',
       role: 'MANAGER',
@@ -531,6 +533,7 @@ async function seedUsers(branchId: string): Promise<void> {
     await prisma.user.create({
       data: {
         id: id(),
+        username: user.username,
         email: user.email,
         name: user.name,
         passwordHash: await argon2.hash(user.password, ARGON),
@@ -544,7 +547,7 @@ async function seedUsers(branchId: string): Promise<void> {
       },
     });
 
-    console.log(`   ✓ ${user.email} · ${user.password} · PIN ${user.pin} · ${user.role}`);
+    console.log(`   ✓ ${user.username} (${user.email}) · ${user.password} · PIN ${user.pin} · ${user.role}`);
   }
 }
 

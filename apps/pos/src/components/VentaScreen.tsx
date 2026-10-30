@@ -344,7 +344,7 @@ export function VentaScreen({
     setCharging(true);
   };
 
-  async function confirmPayment(payments: SalePaymentInput[], cashReceived?: string) {
+  async function confirmPayment(payments: SalePaymentInput[], cashReceived: string | undefined, print: boolean) {
     if (submitting.current) return;
     submitting.current = true;
     setPaying(true);
@@ -361,7 +361,8 @@ export function VentaScreen({
       });
 
       setLastSale({ sale, cashReceived: cashReceived ?? null });
-      if (settings['ticket.autoPrint']) {
+      // El cajero elige en el cobro; sin ticket, la venta se puede reimprimir después.
+      if (print) {
         setPrinting({ sale, cashReceived: cashReceived ?? null, reprint: false });
       }
       // El ticket cobrado se cierra; si era el único, se abre uno nuevo.
@@ -687,6 +688,7 @@ export function VentaScreen({
           busy={paying}
           error={payError}
           customer={ticket.customer}
+          printByDefault={settings['ticket.autoPrint']}
           onCancel={() => {
             setCharging(false);
             setPayError(null);

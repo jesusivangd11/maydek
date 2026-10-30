@@ -363,6 +363,12 @@
   white-space: nowrap;
 }
 
+/* Un número seguido de su estado («0 AGOTADO»): que no queden pegados. */
+strong + .badge,
+.table__num > .badge {
+  margin-left: var(--s-3);
+}
+
 .badge--bare {
   border-left-width: 1px;
   text-transform: none;
@@ -558,13 +564,16 @@
 
 .segmented--block {
   display: flex;
+  /* Con muchas opciones (formas de pago) se acomodan en dos renglones en
+     lugar de ensanchar el diálogo y obligar a desplazarlo de lado. */
+  flex-wrap: wrap;
   width: 100%;
 }
 
 .segmented__item {
-  flex: 1;
+  flex: 1 1 auto;
   height: 34px;
-  padding: 0 var(--s-4);
+  padding: 0 var(--s-3);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -778,6 +787,8 @@
   width: min(520px, 100%);
   max-height: 92dvh;
   overflow-y: auto;
+  /* Nunca desplazar de lado: lo que no cabe debe acomodarse, no esconderse. */
+  overflow-x: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);

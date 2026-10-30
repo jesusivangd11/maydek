@@ -49,12 +49,12 @@ const STEPS = [
   {
     card: null,
     chapter: 'Iniciar sesión',
-    say: 'Cada persona entra con su propio correo y contraseña. Así el sistema sabe quién hizo cada venta.',
+    say: 'Cada persona entra con su propio usuario y su PIN o contraseña. Así el sistema sabe quién hizo cada venta.',
     async do(ui) {
       await ui.sleep(600);
-      await ui.field('Correo');
-      await ui.type(ui.creds.adminEmail, 55);
-      await ui.field('Contraseña');
+      await ui.field('Usuario');
+      await ui.type(ui.creds.adminUsername ?? ui.creds.adminEmail, 55);
+      await ui.field('PIN o contraseña');
       await ui.type(ui.creds.adminPassword, 35);
       await ui.key('Enter');
       await ui.waitText('Código del producto');

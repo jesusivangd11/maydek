@@ -321,25 +321,21 @@ describe('Reserva contra venta — web y mostrador a la vez', () => {
 });
 
 describe('La restricción CHECK como última defensa', () => {
-  it('un UPDATE que ignore la validación es rechazado por PostgreSQL', async () => {
+  it('un descuento sin validar deja la existencia en negativo (se permite vender sin existencia)', async () => {
     const variantId = await crearVarianteConStock('1.000');
 
-    // Simula un bug futuro: descontar sin validar.
-    await expect(
-      owner.$executeRaw`
-        UPDATE stock_balances SET qty_on_hand = qty_on_hand - 5
-        WHERE variant_id = ${variantId}::uuid AND warehouse_id = ${warehouseId}::uuid
-          AND condition = 'GOOD'
-      `,
-    ).rejects.toThrow(/chk_stock_no_negativo|violates check constraint/i);
+    await owner.$executeRaw`
+      UPDATE stock_balances SET qty_on_hand = qty_on_hand - 5
+      WHERE variant_id = ${variantId}::uuid AND warehouse_id = ${warehouseId}::uuid
+        AND condition = 'GOOD'
+    `;
 
-    // El saldo quedó intacto: la transacción abortó completa.
     const saldo = await owner.stockBalance.findUnique({
       where: {
         variantId_warehouseId_condition: { variantId, warehouseId, condition: 'GOOD' },
       },
     });
-    expect(Number(saldo?.qtyOnHand)).toBe(1);
+    expect(Number(saldo?.qtyOnHand)).toBe(-4);
   }, 30_000);
 
   it('no se puede reservar más de lo que hay físicamente', async () => {

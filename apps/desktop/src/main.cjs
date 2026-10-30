@@ -35,7 +35,8 @@ const SUPPORT = {
   whatsapp: '526141336763',
   hours: 'Lunes a sábado de 9:00 a 19:00 (hora del centro de México)',
 };
-const ICON = path.join(__dirname, 'assets', 'icon.png');
+// En Windows la ventana y la barra de tareas toman el .ico (trae 16 a 256 px).
+const ICON = path.join(__dirname, 'assets', process.platform === 'win32' ? 'maydek.ico' : 'icon.png');
 
 let config = null;
 let baseUrl = null;
@@ -48,6 +49,10 @@ let quitting = false;
 // datos y no en %APPDATA%\<nombre del producto>: si el nombre comercial
 // cambia, la configuración cifrada se sigue pudiendo leer.
 app.setPath('userData', path.join(paths.dataDir, 'electron'));
+
+// Mismo id que el instalador (appId): así la barra de tareas agrupa las ventanas
+// y muestra el ícono de Maydek en lugar del genérico.
+if (process.platform === 'win32') app.setAppUserModelId('mx.maydek.pos');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -294,7 +299,8 @@ async function setupServer(data, win, onlyBusiness) {
     branchName: data.branchName?.trim() || 'Tienda principal',
     timezone: data.timezone,
     adminName: data.adminName.trim(),
-    adminEmail: data.adminEmail.trim().toLowerCase(),
+    adminUsername: data.adminUsername.trim().toLowerCase(),
+    adminEmail: (data.adminEmail || '').trim().toLowerCase() || `${data.adminUsername.trim().toLowerCase()}@sin-correo.maydek`,
     adminPassword: data.adminPassword,
     adminPin: data.adminPin,
   });

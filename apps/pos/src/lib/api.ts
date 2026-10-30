@@ -117,6 +117,7 @@ function toQuery(params: Record<string, string | number | boolean | undefined | 
 export interface SessionUser {
   id: string;
   email: string;
+  username?: string;
   name: string;
   roles: string[];
   permissions: string[];
@@ -156,6 +157,23 @@ export interface Category {
   productCount: number;
 }
 
+/** Ganancia del turno: ventas sin IVA (menos devoluciones) − costo de lo vendido. */
+export interface CashProfit {
+  netSales: string;
+  cost: string;
+  netProfit: string;
+  margin: string;
+  byCategory: {
+    category: string;
+    qty: string;
+    total: string;
+    netSales: string;
+    cost: string;
+    profit: string;
+    margin: string;
+  }[];
+}
+
 export interface CashSession {
   id: string;
   folio: string;
@@ -173,6 +191,8 @@ export interface CashSession {
   differenceReason: string | null;
   totalsByMethod: { code: string; name: string; affectsCash: boolean; total: string }[];
   sales: { count: number; total: string; average: string };
+  /** Solo con permiso de ver utilidad. */
+  profit?: CashProfit;
   movements: {
     id: string;
     type: string;
@@ -532,14 +552,23 @@ export interface Dashboard {
   byHour: { hour: number; count: number; total: string }[];
   byMethod: { code: string; name: string; count: number; total: string }[];
   byCashier: { id: string; name: string; count: number; total: string }[];
-  byCategory: { category: string; qty: string; total: string; profit?: string }[];
-  topProducts: { variantId: string; sku: string; name: string; qty: string; total: string; profit?: string }[];
+  byCategory: {
+    category: string;
+    qty: string;
+    total: string;
+    netSales?: string;
+    cost?: string;
+    profit?: string;
+    margin?: string;
+  }[];
+  topProducts: { variantId: string; sku: string; name: string; qty: string; total: string; cost?: string; profit?: string }[];
   inventory: { value?: string; units: string; lowStock: number; outOfStock: number };
   receivables: { total: string; customers: number };
 }
 
 export interface UserRow {
   id: string;
+  username: string;
   email: string;
   name: string;
   phone?: string | null;
@@ -626,7 +655,19 @@ export interface CommonItem {
 
 export interface SalesReport {
   range: { from: string; to: string; timezone: string };
-  summary: { count: number; cancelled: number; total: string; averageTicket: string; profit?: string };
+  summary: {
+    count: number;
+    cancelled: number;
+    cancelledTotal: string;
+    total: string;
+    netSales: string;
+    tax: string;
+    discount: string;
+    averageTicket: string;
+    cost?: string;
+    profit?: string;
+    margin?: string;
+  };
   data: {
     id: string;
     folio: string;
@@ -636,6 +677,7 @@ export interface SalesReport {
     customer: string | null;
     items: string;
     total: string;
+    discount: string;
     methods: string;
     wholesale: boolean;
     profit?: string;
@@ -673,10 +715,11 @@ export interface SalePaymentInput {
 
 export const api = {
   // ── Sesión ──
-  login: (email: string, password: string) =>
+  /** Entra con el usuario (no distingue mayúsculas) y su clave: PIN o contraseña. */
+  login: (username: string, password: string) =>
     request<{ accessToken: string; expiresIn: number; user: SessionUser }>('/auth/login', {
       method: 'POST',
-      body: { email, password },
+      body: { username, password },
       skipRefresh: true,
     }),
 
@@ -959,11 +1002,11 @@ export const api = {
   listUsers: () => request<{ data: UserRow[] }>('/users?limit=200'),
   listRoles: () =>
     request<{ id: string; code: string; name: string; permissions: string[] }[]>('/users/roles'),
-  createUser: (body: { email: string; name: string; password: string; pin?: string; phone?: string; roleCodes: string[]; mustChangePassword?: boolean }) =>
+  createUser: (body: { username: string; email?: string; name: string; password: string; pin?: string; phone?: string; roleCodes: string[]; mustChangePassword?: boolean }) =>
     request<UserRow>('/users', { method: 'POST', body }),
   updateUser: (
     id: string,
-    body: { name?: string; phone?: string; status?: string; password?: string; pin?: string },
+    body: { name?: string; email?: string; phone?: string; status?: string; password?: string; pin?: string },
   ) => request<UserRow>(`/users/${id}`, { method: 'PATCH', body }),
   getUser: (id: string) => request<UserRow & { permissions: string[] }>(`/users/${id}`),
   listPermissions: () => request<PermissionGroup[]>('/users/permissions'),

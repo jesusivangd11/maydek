@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ApiError, api, type CashSession } from '../lib/api';
+import { ProfitBreakdown } from './ProfitBreakdown';
 import { getPaperWidth, setPaperWidth, type PaperWidth } from './PrintTicket';
 import { formatDateTime, formatMoney, formatTime } from '../lib/format';
 import {
@@ -196,6 +197,8 @@ export function CashPanel({
               </div>
             )}
           </Card>
+
+          {session.profit && <ProfitBreakdown profit={session.profit} />}
 
           <Card title="Movimientos de caja" flush>
             {session.movements.length === 0 ? (

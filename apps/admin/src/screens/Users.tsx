@@ -14,6 +14,14 @@ import { can, errorText, useLoad } from '../lib/util';
  * contraseña delante del cliente.
  */
 
+/** Correo interno que el servidor inventa cuando la persona no tiene uno. */
+const NO_EMAIL_SUFFIX = '@sin-correo.maydek';
+
+/** Reglas de la clave de acceso (las mismas que valida el servidor). */
+const PIN_RE = /^\d{4,12}$/;
+const USERNAME_RE = /^[a-z0-9._-]{3,32}$/;
+const validKey = (key: string) => PIN_RE.test(key) || key.length >= 8;
+
 const STATUS_LABEL: Record<string, string> = {
   ACTIVE: 'Activo',
   SUSPENDED: 'Suspendido',
@@ -49,6 +57,7 @@ export function UsersScreen({ user }: ScreenProps) {
             <thead>
               <tr>
                 <th>Nombre</th>
+                <th>Usuario</th>
                 <th>Correo</th>
                 <th>Roles</th>
                 <th>Estado</th>
@@ -62,7 +71,10 @@ export function UsersScreen({ user }: ScreenProps) {
                   <td>
                     <strong>{u.name}</strong>
                   </td>
-                  <td className="muted">{u.email}</td>
+                  <td>
+                    <code>{u.username}</code>
+                  </td>
+                  <td className="muted">{u.email.endsWith(NO_EMAIL_SUFFIX) ? '—' : u.email}</td>
                   <td>
                     {u.roles.map((r) => (
                       <Badge key={r.code} dot={false}>
@@ -241,7 +253,9 @@ function UserDialog({
   onSaved: () => void;
 }) {
   const [name, setName] = useState(target?.name ?? '');
-  const [email, setEmail] = useState(target?.email ?? '');
+  const [username, setUsername] = useState(target?.username ?? '');
+  const [email, setEmail] = useState(target && !target.email.endsWith(NO_EMAIL_SUFFIX) ? target.email : '');
+  const [mustChange, setMustChange] = useState(true);
   const [phone, setPhone] = useState(target?.phone ?? '');
   const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
@@ -256,6 +270,7 @@ function UserDialog({
       if (target) {
         await api.updateUser(target.id, {
           name,
+          email: email.trim() || undefined,
           phone: phone || undefined,
           ...(password ? { password } : {}),
           ...(pin ? { pin } : {}),
@@ -264,12 +279,13 @@ function UserDialog({
       } else {
         await api.createUser({
           name,
-          email,
+          username: username.trim().toLowerCase(),
+          email: email.trim() || undefined,
           password,
           pin: pin || undefined,
           phone: phone || undefined,
           roleCodes: selected,
-          mustChangePassword: true,
+          mustChangePassword: mustChange,
         });
       }
       onSaved();
@@ -296,8 +312,9 @@ function UserDialog({
   const invalid =
     name.trim().length < 2 ||
     selected.length === 0 ||
-    (!target && (!email.includes('@') || password.length < 10)) ||
-    (Boolean(target) && password.length > 0 && password.length < 10) ||
+    (!target && (!USERNAME_RE.test(username.trim().toLowerCase()) || !validKey(password))) ||
+    (email.trim().length > 0 && !email.includes('@')) ||
+    (Boolean(target) && password.length > 0 && !validKey(password)) ||
     (pin.length > 0 && pin.length < 4);
 
   return (
@@ -329,19 +346,34 @@ function UserDialog({
         <Field label="Nombre" htmlFor="u-name">
           <TextInput id="u-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Correo" htmlFor="u-email">
-          <TextInput id="u-email" type="email" disabled={Boolean(target)} value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field
+          label="Usuario"
+          htmlFor="u-username"
+          hint={target ? 'Con este nombre entra al sistema; no se puede cambiar.' : '3 a 32 letras, números, punto, guion o guion bajo. Con él entra al sistema.'}
+        >
+          <TextInput
+            id="u-username"
+            disabled={Boolean(target)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+          />
+        </Field>
+        <Field label="Correo (opcional)" htmlFor="u-email" hint="Solo para contactarla; no sirve para entrar.">
+          <TextInput id="u-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
         <Field label="Teléfono" htmlFor="u-phone">
           <TextInput id="u-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
         <Field
-          label={target ? 'Nueva contraseña (opcional)' : 'Contraseña inicial'}
+          label={target ? 'Nuevo PIN o contraseña (opcional)' : 'PIN o contraseña inicial'}
           htmlFor="u-pass"
           hint={
             target
-              ? 'Déjala vacía para no cambiarla. Si la cambias, se le pedirá una propia al entrar.'
-              : 'Mínimo 10 caracteres. Se le pedirá cambiarla al entrar.'
+              ? 'Déjala vacía para no cambiarla.'
+              : 'PIN de 4 o más dígitos, o contraseña de 8 o más caracteres. Un PIN corto es más fácil de adivinar.'
           }
         >
           <TextInput id="u-pass" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -368,6 +400,12 @@ function UserDialog({
           </label>
         ))}
       </fieldset>
+      {!target && (
+        <label className="check">
+          <input type="checkbox" checked={mustChange} onChange={(e) => setMustChange(e.target.checked)} />
+          Pedir que la cambie la primera vez que entre
+        </label>
+      )}
       {self && <p className="field__hint">No puedes quitarte el rol de administrador ni desactivarte a ti mismo.</p>}
       {error && <Alert>{error}</Alert>}
     </Modal>

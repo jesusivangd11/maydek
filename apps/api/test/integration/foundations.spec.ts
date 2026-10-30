@@ -85,12 +85,13 @@ afterAll(async () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe('Restricciones del inventario — la última defensa', () => {
-  it('rechaza un saldo NEGATIVO', async () => {
-    await expect(
-      owner.stockBalance.create({
-        data: { variantId, warehouseId, condition: 'GOOD', qtyOnHand: '-1.000' },
-      }),
-    ).rejects.toThrow(/chk_stock_no_negativo|violates check constraint/i);
+  it('acepta un saldo NEGATIVO: se puede vender sin existencia (decisión del 29-oct-2026)', async () => {
+    const saldo = await owner.stockBalance.create({
+      data: { variantId, warehouseId, condition: 'GOOD', qtyOnHand: '-1.000' },
+    });
+    expect(Number(saldo.qtyOnHand)).toBe(-1);
+    // Se retira para no estorbar a las demás pruebas del archivo.
+    await owner.stockBalance.deleteMany({ where: { variantId, warehouseId, condition: 'GOOD' } });
   });
 
   it('rechaza reservar MÁS de lo que hay físicamente', async () => {

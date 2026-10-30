@@ -4,3 +4,4 @@ export * from './errors';
 export * from './events';
 export * from './audit';
 export * from './auth';
+export * from './access';

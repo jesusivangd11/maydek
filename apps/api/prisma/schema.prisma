@@ -534,6 +534,9 @@ model StoredFile {
 model User {
   id             String     @id @db.Uuid
   email          String     @unique
+  /// Con lo que se entra al sistema. Siempre en minúsculas (no distingue mayúsculas).
+  username       String     @unique @db.VarChar(32)
+  /// Clave de acceso: un PIN de 4+ dígitos o una contraseña (nombre histórico).
   passwordHash   String     @map("password_hash")
   /// PIN corto para identificarse en el POS sin teclear correo y contraseña.
   pinHash        String?    @map("pin_hash")

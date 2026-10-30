@@ -16,6 +16,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+/** SKU y códigos de barras: sin espacios de más y siempre en mayúsculas («f1» = «F1»). */
+const code = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toUpperCase() : value);
+
 export class PosSearchDto {
   @ApiPropertyOptional({ description: 'Código de barras, SKU o nombre' })
   @IsOptional() @IsString() @MaxLength(100)
@@ -54,11 +57,11 @@ export class ListProductsDto {
 }
 
 export class ProductVariantDto {
-  @ApiProperty() @IsString() @Length(1, 64) sku!: string;
+  @ApiProperty() @Transform(code) @IsString() @Length(1, 64) sku!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(120) nameSuffix?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() basePrice?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() minStock?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) barcode?: string;
+  @ApiPropertyOptional() @IsOptional() @Transform(code) @IsString() @MaxLength(64) barcode?: string;
   @ApiPropertyOptional({ description: 'Costo de compra por pieza' })
   @IsOptional() @IsNumberString() cost?: string;
   @ApiPropertyOptional({ description: 'Precio de mayoreo' })
@@ -73,10 +76,10 @@ export class CreateProductDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) description?: string;
 
   @ApiPropertyOptional({ description: 'SKU del producto simple (sin variantes)' })
-  @IsOptional() @IsString() @Length(1, 64)
+  @IsOptional() @Transform(code) @IsString() @Length(1, 64)
   sku?: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) barcode?: string;
+  @ApiPropertyOptional() @IsOptional() @Transform(code) @IsString() @MaxLength(64) barcode?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() basePrice?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() minStock?: string;
   @ApiPropertyOptional({ description: 'Costo de compra por pieza' })
@@ -116,14 +119,14 @@ export class UpdateProductDto {
 }
 
 export class UpdateVariantDto {
-  @ApiPropertyOptional() @IsOptional() @IsString() @Length(1, 64) sku?: string;
+  @ApiPropertyOptional() @IsOptional() @Transform(code) @IsString() @Length(1, 64) sku?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(120) nameSuffix?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() basePrice?: string;
   @ApiPropertyOptional({ description: 'Precio de mayoreo; vacío lo quita' })
   @IsOptional() @IsString() @Matches(/^$|^\d+(\.\d+)?$/) wholesalePrice?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumberString() minStock?: string;
   @ApiPropertyOptional({ description: 'Reemplaza el código de barras principal' })
-  @IsOptional() @IsString() @MaxLength(64)
+  @IsOptional() @Transform(code) @IsString() @MaxLength(64)
   barcode?: string;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
 }

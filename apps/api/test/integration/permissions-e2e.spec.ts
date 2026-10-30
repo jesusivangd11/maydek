@@ -45,6 +45,7 @@ async function crearUsuario(
   await owner.user.create({
     data: {
       id: userId,
+      username: email.split('@')[0]!.toLowerCase(),
       email,
       name: `Usuario ${roleCode}`,
       passwordHash: await argon2.hash(PASSWORD, {
@@ -121,7 +122,7 @@ describe('Autenticación por HTTP', () => {
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe('UNAUTHENTICATED');
     // El mismo mensaje que con contraseña incorrecta: no filtra qué correos existen.
-    expect(res.body.error.message).toBe('Correo o contraseña incorrectos');
+    expect(res.body.error.message).toBe('Usuario o clave incorrectos');
   });
 
   it('un endpoint protegido sin token responde 401', async () => {
@@ -212,6 +213,7 @@ describe('★ Un cajero NO puede saltarse sus permisos llamando al API', () => {
       .post('/api/v1/users')
       .set('Authorization', `Bearer ${cashierToken}`)
       .send({
+        username: `intruso${Date.now()}`,
         email: `intruso.${Date.now()}@test.local`,
         name: 'Intruso',
         password: 'Password.Larga123',
@@ -280,6 +282,7 @@ describe('Validación de entrada', () => {
       .post('/api/v1/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
+        username: `masivo${Date.now()}`,
         email: `masivo.${Date.now()}@test.local`,
         name: 'Asignación masiva',
         password: 'Password.Larga123',
@@ -293,19 +296,20 @@ describe('Validación de entrada', () => {
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
-  it('rechaza una contraseña demasiado corta con mensaje entendible', async () => {
+  it('rechaza una clave demasiado corta con mensaje entendible', async () => {
     const res = await http
       .post('/api/v1/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
+        username: `corta${Date.now()}`,
         email: `corta.${Date.now()}@test.local`,
         name: 'Contraseña corta',
-        password: 'corta',
+        password: 'corta',  // ni PIN (solo dígitos) ni 8 caracteres
         roleCodes: ['CASHIER'],
       });
 
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body.error.details)).toMatch(/al menos 10 caracteres/);
+    expect(JSON.stringify(res.body.error.details)).toMatch(/PIN de al menos 4 dígitos o una contraseña de al menos 8/);
   });
 
   it('rechaza crear un usuario sin ningún rol', async () => {
@@ -313,6 +317,7 @@ describe('Validación de entrada', () => {
       .post('/api/v1/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
+        username: `sinrol${Date.now()}`,
         email: `sinrol.${Date.now()}@test.local`,
         name: 'Sin rol',
         password: 'Password.Larga123',
@@ -360,11 +365,13 @@ describe('Auditoría desde el API real', () => {
 
   it('crear un usuario deja rastro con quién lo hizo', async () => {
     const email = `auditado.${Date.now()}@test.local`;
+    const username = `auditado${Date.now()}`;
 
     const res = await http
       .post('/api/v1/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
+        username,
         email,
         name: 'Usuario auditado',
         password: 'Password.Larga123',
@@ -377,7 +384,7 @@ describe('Auditoría desde el API real', () => {
     });
     expect(registro).toBeTruthy();
     expect(registro?.userId).toBeTruthy();
-    expect(registro?.entityLabel).toContain(email);
+    expect(registro?.entityLabel).toContain(username);
   });
 });
 
@@ -387,6 +394,7 @@ describe('Outbox transaccional desde el API real', () => {
       .post('/api/v1/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
+        username: `u${Date.now()}`,
         email: `outbox.${Date.now()}@test.local`,
         name: 'Usuario outbox',
         password: 'Password.Larga123',

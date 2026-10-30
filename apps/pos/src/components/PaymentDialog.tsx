@@ -55,6 +55,7 @@ export function PaymentDialog({
   busy,
   error,
   customer,
+  printByDefault,
   onCancel,
   onConfirm,
 }: {
@@ -62,8 +63,10 @@ export function PaymentDialog({
   busy: boolean;
   error: string | null;
   customer: { id: string; name: string; creditAvailable: string } | null;
+  /** Qué hace Enter: cobrar imprimiendo o sin imprimir (se cambia en Configuración). */
+  printByDefault: boolean;
   onCancel: () => void;
-  onConfirm: (payments: SalePaymentInput[], cashReceived?: string) => void;
+  onConfirm: (payments: SalePaymentInput[], cashReceived: string | undefined, print: boolean) => void;
 }) {
   const available = METHODS.filter((m) => m.kind !== 'CREDIT' || customer !== null);
 
@@ -134,7 +137,7 @@ export function PaymentDialog({
     setReceived(next.affectsCash ? '' : remaining.toFixed(2));
   }
 
-  function confirm() {
+  function confirm(print: boolean) {
     if (!canConfirm) return;
 
     const payments: SalePaymentInput[] = [...partials];
@@ -146,7 +149,11 @@ export function PaymentDialog({
       });
     }
 
-    onConfirm(payments, isCash && remaining > 0 ? Math.max(receivedNumber, remaining).toFixed(2) : undefined);
+    onConfirm(
+      payments,
+      isCash && remaining > 0 ? Math.max(receivedNumber, remaining).toFixed(2) : undefined,
+      print,
+    );
   }
 
   return (
@@ -157,7 +164,8 @@ export function PaymentDialog({
           if (splitting) setSplitting(false);
           else onCancel();
         }
-        if (event.key === 'Enter' && canConfirm) confirm();
+        // Enter hace lo predeterminado; Shift+Enter, lo contrario.
+        if (event.key === 'Enter' && canConfirm) confirm(event.shiftKey ? !printByDefault : printByDefault);
       }}
       head={
         <>
@@ -174,11 +182,24 @@ export function PaymentDialog({
       }
       foot={
         <>
-          <Button variant="primary" size="xl" onClick={confirm} disabled={!canConfirm}>
-            {busy ? 'Registrando…' : `Cobrar ${formatMoney(total)}`}
-          </Button>
+          <div className="pay__confirm">
+            {/* El predeterminado va primero y resaltado; el otro, al lado. */}
+            {(printByDefault ? [true, false] : [false, true]).map((print) => (
+                <Button
+                  key={String(print)}
+                  variant={print === printByDefault ? 'primary' : 'secondary'}
+                  size="xl"
+                  onClick={() => confirm(print)}
+                  disabled={!canConfirm}
+                >
+                  {busy ? 'Registrando…' : print ? 'Cobrar e imprimir ticket' : 'Cobrar sin ticket'}
+                </Button>
+            ))}
+          </div>
           <p className="field__hint center" style={{ marginTop: 'var(--s-3)' }}>
-            <kbd className="kbd">Enter</kbd> confirmar · <kbd className="kbd">Esc</kbd> volver
+            <kbd className="kbd">Enter</kbd> {printByDefault ? 'cobra e imprime' : 'cobra sin ticket'} ·{' '}
+            <kbd className="kbd">Shift</kbd>+<kbd className="kbd">Enter</kbd>{' '}
+            {printByDefault ? 'cobra sin ticket' : 'cobra e imprime'} · <kbd className="kbd">Esc</kbd> volver
           </p>
         </>
       }

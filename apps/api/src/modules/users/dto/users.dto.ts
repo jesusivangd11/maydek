@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+import { ACCESS_KEY_MESSAGE, USERNAME_MESSAGE, USERNAME_PATTERN } from '@pv/shared-types';
+import { ACCESS_KEY_REGEX } from '../../auth/dto/auth.dto';
 import {
   ArrayNotEmpty,
   IsArray,
@@ -26,17 +28,25 @@ export class ListUsersDto {
   limit?: number;
 }
 
+const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
+
 export class CreateUserDto {
-  @ApiProperty() @IsEmail({}, { message: 'El correo no tiene un formato válido' }) @MaxLength(255)
-  email!: string;
+  @ApiProperty({ example: 'carla', description: 'Con lo que entra; no distingue mayúsculas' })
+  @Transform(lower)
+  @Matches(USERNAME_PATTERN, { message: USERNAME_MESSAGE })
+  username!: string;
+
+  @ApiPropertyOptional({ description: 'Correo de contacto (opcional)' })
+  @IsOptional() @IsEmail({}, { message: 'El correo no tiene un formato válido' }) @MaxLength(255)
+  email?: string;
 
   @ApiProperty() @IsString() @Length(2, 120) name!: string;
 
-  @ApiProperty({ description: 'Mínimo 10 caracteres' })
-  @IsString() @Length(10, 200, { message: 'La contraseña debe tener al menos 10 caracteres' })
+  @ApiProperty({ description: 'Clave de acceso: PIN de 4+ dígitos o contraseña de 8+ caracteres' })
+  @IsString() @Matches(ACCESS_KEY_REGEX, { message: ACCESS_KEY_MESSAGE })
   password!: string;
 
-  @ApiPropertyOptional({ description: 'PIN de 4 a 8 dígitos para el POS' })
+  @ApiPropertyOptional({ description: 'PIN de supervisor, 4 a 8 dígitos, para autorizar descuentos y cancelaciones' })
   @IsOptional() @IsString() @Matches(/^\d{4,8}$/, { message: 'El PIN debe tener entre 4 y 8 dígitos' })
   pin?: string;
 
@@ -61,9 +71,13 @@ export class UpdateUserDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(32) phone?: string;
   @ApiPropertyOptional({ enum: UserStatus }) @IsOptional() @IsEnum(UserStatus) status?: UserStatus;
 
-  @ApiPropertyOptional({ description: 'Contraseña temporal nueva (se pedirá cambiarla)' })
-  @IsOptional() @IsString() @Length(10, 200, { message: 'La contraseña debe tener al menos 10 caracteres' })
+  @ApiPropertyOptional({ description: 'Clave nueva (PIN de 4+ dígitos o contraseña de 8+ caracteres)' })
+  @IsOptional() @IsString() @Matches(ACCESS_KEY_REGEX, { message: ACCESS_KEY_MESSAGE })
   password?: string;
+
+  @ApiPropertyOptional({ description: 'Correo de contacto' })
+  @IsOptional() @IsEmail({}, { message: 'El correo no tiene un formato válido' }) @MaxLength(255)
+  email?: string;
 
   @ApiPropertyOptional({ description: 'PIN nuevo de 4 a 8 dígitos' })
   @IsOptional() @IsString() @Matches(/^\d{4,8}$/, { message: 'El PIN debe tener entre 4 y 8 dígitos' })

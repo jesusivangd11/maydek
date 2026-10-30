@@ -1,25 +1,36 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { ACCESS_KEY_MESSAGE } from '@pv/shared-types';
 import {
-  IsEmail,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
-  Length,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
-export class LoginDto {
-  @ApiProperty({ example: 'admin@distribuidora.local' })
-  @IsEmail({}, { message: 'El correo no tiene un formato válido' })
-  @MaxLength(255)
-  email!: string;
+/** PIN de 4 a 12 dígitos, o contraseña de 8 a 200 caracteres. */
+export const ACCESS_KEY_REGEX = /^(?:\d{4,12}|[\s\S]{8,200})$/;
 
-  @ApiProperty({ example: 'Admin.Cambiar123' })
+export class LoginDto {
+  @ApiProperty({ example: 'jesus', description: 'Usuario (no distingue mayúsculas)', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'La contraseña es obligatoria' })
+  @MaxLength(255)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  username?: string;
+
+  @ApiProperty({ required: false, description: 'Alternativa al usuario, por compatibilidad' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  email?: string;
+
+  @ApiProperty({ example: '2580', description: 'PIN o contraseña' })
+  @IsString()
+  @IsNotEmpty({ message: 'Escribe tu PIN o contraseña' })
   @MaxLength(200)
   password!: string;
 }
@@ -63,9 +74,9 @@ export class ChangePasswordDto {
   @IsNotEmpty()
   currentPassword!: string;
 
-  @ApiProperty({ description: 'Mínimo 10 caracteres' })
+  @ApiProperty({ description: 'PIN de 4+ dígitos o contraseña de 8+ caracteres' })
   @IsString()
-  @Length(10, 200, { message: 'La contraseña nueva debe tener al menos 10 caracteres' })
+  @Matches(ACCESS_KEY_REGEX, { message: ACCESS_KEY_MESSAGE })
   newPassword!: string;
 }
 

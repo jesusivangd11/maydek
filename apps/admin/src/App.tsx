@@ -93,10 +93,10 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (username: string, password: string) => {
     setError(null);
     try {
-      const result = await api.login(email, password);
+      const result = await api.login(username, password);
       setAccessToken(result.accessToken);
       setUser(result.user);
     } catch (err) {
@@ -184,13 +184,13 @@ function AdminLogin({
   onSubmit,
   error,
 }: {
-  onSubmit: (email: string, password: string) => Promise<void>;
+  onSubmit: (username: string, password: string) => Promise<void>;
   error: string | null;
 }) {
-  // Se recuerda el último correo usado en este equipo (nunca la contraseña).
-  const [email, setEmail] = useState(() => {
+  // Se recuerda el último usuario en este equipo (nunca la clave).
+  const [username, setUsername] = useState(() => {
     try {
-      return localStorage.getItem('pv.admin.lastEmail') ?? '';
+      return localStorage.getItem('pv.admin.lastUser') ?? '';
     } catch {
       return '';
     }
@@ -205,12 +205,12 @@ function AdminLogin({
         onSubmit={async (event) => {
           event.preventDefault();
           try {
-            localStorage.setItem('pv.admin.lastEmail', email.trim());
+            localStorage.setItem('pv.admin.lastUser', username.trim().toLowerCase());
           } catch {
             // Sin almacenamiento: solo se pierde la comodidad.
           }
           setBusy(true);
-          await onSubmit(email, password);
+          await onSubmit(username, password);
           setBusy(false);
         }}
       >
@@ -223,23 +223,26 @@ function AdminLogin({
         </div>
 
         <div className="login__form">
-          <Field label="Correo" htmlFor="email">
+          <Field label="Usuario" htmlFor="username" hint="No importa si usas mayúsculas o minúsculas.">
             <TextInput
-              id="email"
-              type="email"
+              id="username"
               large
-              value={email}
+              value={username}
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
-              onChange={(event) => setEmail(event.target.value)}
+              autoFocus={!username}
+              onChange={(event) => setUsername(event.target.value)}
             />
           </Field>
-          <Field label="Contraseña" htmlFor="password">
+          <Field label="PIN o contraseña" htmlFor="password">
             <TextInput
               id="password"
               type="password"
               large
-              autoFocus
+              autoFocus={Boolean(username)}
               value={password}
               autoComplete="current-password"
               required

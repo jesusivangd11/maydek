@@ -138,7 +138,8 @@ export class CatalogService {
     if (term.length > 0) {
       // 1 · Código de barras exacto
       const byBarcode = await this.findVariants(
-        { ...baseWhere, barcodes: { some: { code: term, deletedAt: null } } },
+        // Sin distinguir mayúsculas: «f1» encuentra el código «F1».
+        { ...baseWhere, barcodes: { some: { code: { equals: term, mode: 'insensitive' }, deletedAt: null } } },
         warehouseId,
         1,
       );
@@ -667,7 +668,7 @@ export class CatalogService {
 
   /** El código principal se reemplaza; el anterior queda archivado, no borrado. */
   private async replaceBarcode(tx: Prisma.TransactionClient, variantId: string, code: string) {
-    const clean = code.trim();
+    const clean = code.trim().toUpperCase();
     if (clean) {
       const taken = await tx.barcode.findFirst({
         where: { code: clean, deletedAt: null, NOT: { variantId } },

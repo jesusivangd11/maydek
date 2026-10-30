@@ -184,7 +184,7 @@ export class ReportsService {
       })),
       byCategory: byCategory.map((c) => ({
         ...c,
-        ...(showProfit ? {} : { profit: undefined }),
+        ...(showProfit ? {} : { profit: undefined, cost: undefined, netSales: undefined, margin: undefined }),
       })),
       topProducts: topProducts.map((p) => ({
         ...p,
@@ -274,6 +274,8 @@ export class ReportsService {
         total: string;
         subtotal: string;
         cost: string;
+        tax: string;
+        discount: string;
         methods: string | null;
         wholesale: boolean;
       }[]
@@ -282,6 +284,7 @@ export class ReportsService {
              COALESCE(NULLIF(TRIM(COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')), ''), c.business_name) AS customer,
              (SELECT COALESCE(SUM(si.qty), 0) FROM sale_items si WHERE si.sale_id = s.id)::text AS items,
              s.total::text AS total, s.subtotal::text AS subtotal, s.cost_total::text AS cost,
+             s.tax_total::text AS tax, s.discount_total::text AS discount,
              (SELECT string_agg(DISTINCT pm.name, ', ')
                 FROM payments p JOIN payment_methods pm ON pm.id = p.payment_method_id
                WHERE p.sale_id = s.id) AS methods,
@@ -298,19 +301,34 @@ export class ReportsService {
     const showProfit = actor.permissions.includes(PERMISSIONS.REPORT_PROFIT);
     const valid = rows.filter((r) => r.status !== 'CANCELLED');
     const total = valid.reduce((acc, r) => acc.plus(money(r.total)), money('0'));
-    const profit = valid.reduce(
-      (acc, r) => acc.plus(money(r.subtotal)).minus(money(r.cost)),
-      money('0'),
-    );
+    const net = valid.reduce((acc, r) => acc.plus(money(r.subtotal)), money('0'));
+    const cost = valid.reduce((acc, r) => acc.plus(money(r.cost)), money('0'));
+    const tax = valid.reduce((acc, r) => acc.plus(money(r.tax)), money('0'));
+    const discount = valid.reduce((acc, r) => acc.plus(money(r.discount)), money('0'));
+    const cancelledTotal = rows
+      .filter((r) => r.status === 'CANCELLED')
+      .reduce((acc, r) => acc.plus(money(r.total)), money('0'));
+    const profit = net.minus(cost);
 
     return {
       range: { from: range.from, to: range.to, timezone: ctx.timezone },
       summary: {
         count: valid.length,
         cancelled: rows.length - valid.length,
+        cancelledTotal: cancelledTotal.toFixed(2),
         total: total.toFixed(2),
+        /** Ventas sin IVA y el IVA aparte, para cuadrar contra la contabilidad. */
+        netSales: net.toFixed(2),
+        tax: tax.toFixed(2),
+        discount: discount.toFixed(2),
         averageTicket: valid.length > 0 ? total.dividedBy(valid.length).toFixed(2) : '0.00',
-        ...(showProfit ? { profit: profit.toFixed(2) } : {}),
+        ...(showProfit
+          ? {
+              cost: cost.toFixed(2),
+              profit: profit.toFixed(2),
+              margin: net.isZero() ? '0.0' : profit.dividedBy(net).times(100).toFixed(1),
+            }
+          : {}),
       },
       data: rows.map((r) => ({
         id: r.id,
@@ -323,6 +341,7 @@ export class ReportsService {
         total: money(r.total).toFixed(2),
         methods: r.methods ?? '',
         wholesale: r.wholesale,
+        discount: money(r.discount).toFixed(2),
         ...(showProfit ? { profit: money(r.subtotal).minus(money(r.cost)).toFixed(2) } : {}),
       })),
     };
@@ -503,12 +522,20 @@ export class ReportsService {
       GROUP BY c.name
       ORDER BY 3 DESC NULLS LAST`;
 
-    return rows.map((r) => ({
-      category: r.category ?? 'Sin categoría',
-      qty: money(r.qty ?? '0').toString(),
-      total: money(r.total ?? '0').toFixed(2),
-      profit: money(r.subtotal ?? '0').minus(money(r.cost ?? '0')).toFixed(2) as string | undefined,
-    }));
+    return rows.map((r) => {
+      const net = money(r.subtotal ?? '0');
+      const cost = money(r.cost ?? '0');
+      const profit = net.minus(cost);
+      return {
+        category: r.category ?? 'Sin categoría',
+        qty: money(r.qty ?? '0').toString(),
+        total: money(r.total ?? '0').toFixed(2),
+        netSales: net.toFixed(2) as string | undefined,
+        cost: cost.toFixed(2) as string | undefined,
+        profit: profit.toFixed(2) as string | undefined,
+        margin: (net.isZero() ? '0.0' : profit.dividedBy(net).times(100).toFixed(1)) as string | undefined,
+      };
+    });
   }
 
   private range(query: { from?: string; to?: string }): Range {

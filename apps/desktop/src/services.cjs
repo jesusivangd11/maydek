@@ -54,6 +54,7 @@ function runSeed(config, owner) {
         SEED_BRANCH_CODE: 'A',
         SEED_TIMEZONE: owner.timezone,
         SEED_ADMIN_NAME: owner.adminName,
+        SEED_ADMIN_USERNAME: owner.adminUsername,
         SEED_ADMIN_EMAIL: owner.adminEmail,
         SEED_ADMIN_PASSWORD: owner.adminPassword,
         SEED_ADMIN_PIN: owner.adminPin,

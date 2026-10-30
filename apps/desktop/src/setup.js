@@ -45,7 +45,7 @@ form.addEventListener('submit', async (event) => {
     return;
   }
   if (data.mode === 'server' && data.adminPassword !== data.adminPassword2) {
-    errorBox.textContent = 'Las contraseñas no coinciden.';
+    errorBox.textContent = 'Las dos claves no coinciden.';
     form.elements.namedItem('adminPassword2').focus();
     return;
   }
@@ -69,9 +69,10 @@ function messageFor(el) {
   switch (el.name) {
     case 'terms': return 'Para continuar acepta el contrato de licencia.';
     case 'rfc': return 'El RFC no tiene un formato válido (12 o 13 caracteres).';
-    case 'adminEmail': return 'Escribe un correo válido.';
+    case 'adminEmail': return 'Escribe un correo válido o déjalo vacío.';
+    case 'adminUsername': return 'El usuario lleva de 3 a 32 letras, números, punto, guion o guion bajo.';
     case 'adminPassword':
-    case 'adminPassword2': return 'La contraseña debe tener al menos 10 caracteres.';
+    case 'adminPassword2': return 'La clave es un PIN de 4 o más dígitos, o una contraseña de 8 o más caracteres.';
     case 'adminPin': return 'El PIN debe tener de 4 a 6 dígitos.';
     default: return `Completa el campo «${el.closest('label')?.querySelector('span')?.firstChild?.textContent?.trim() ?? el.name}».`;
   }

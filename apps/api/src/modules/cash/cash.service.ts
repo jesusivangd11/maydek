@@ -322,6 +322,10 @@ export class CashService {
     const expected = await this.expectedCash(session.id);
     const byMethod = await this.totalsByMethod(session.id);
     const salesSummary = await this.salesSummary(session.id);
+    // La utilidad es información del dueño: sin `report.profit` no viaja.
+    const profit = actor.permissions.includes(PERMISSIONS.REPORT_PROFIT)
+      ? await this.profitSummary(session.id)
+      : undefined;
 
     return {
       id: session.id,
@@ -340,6 +344,7 @@ export class CashService {
       differenceReason: session.differenceReason,
       totalsByMethod: byMethod,
       sales: salesSummary,
+      ...(profit ? { profit } : {}),
       movements: session.movements.map((m) => ({
         id: m.id,
         type: m.type,
@@ -478,6 +483,63 @@ export class CashService {
       count,
       total: total.toFixed(4),
       average: count > 0 ? total.dividedBy(count).toFixed(4) : '0.0000',
+    };
+  }
+
+  /**
+   * Ganancia del turno, total y por departamento (categoría).
+   *
+   * Ganancia neta = ventas SIN IVA, ya descontadas las devoluciones, menos el
+   * costo congelado de lo vendido (`sale_items.unit_cost`, el de ese día). Las
+   * ventas canceladas no cuentan. Lo vendido como «artículo común» no tiene
+   * costo registrado, así que su ganancia sale al 100 %.
+   */
+  private async profitSummary(cashSessionId: string) {
+    const rows = await this.prisma.client.$queryRaw<
+      { category: string | null; qty: string; total: string; subtotal: string; cost: string }[]
+    >`
+      SELECT c.name AS category,
+             SUM(si.qty - si.returned_qty)::text AS qty,
+             SUM(si.line_total * (1 - si.returned_qty / NULLIF(si.qty, 0)))::text AS total,
+             SUM(si.line_subtotal * (1 - si.returned_qty / NULLIF(si.qty, 0)))::text AS subtotal,
+             SUM(si.unit_cost * (si.qty - si.returned_qty))::text AS cost
+      FROM sale_items si
+      JOIN sales s ON s.id = si.sale_id
+      JOIN product_variants v ON v.id = si.variant_id
+      JOIN products p ON p.id = v.product_id
+      LEFT JOIN categories c ON c.id = p.category_id
+      WHERE s.cash_session_id = ${cashSessionId}::uuid AND s.status <> 'CANCELLED'
+      GROUP BY c.name
+      ORDER BY SUM(si.line_subtotal * (1 - si.returned_qty / NULLIF(si.qty, 0))) DESC NULLS LAST`;
+
+    const margin = (profit: Decimal, net: Decimal) =>
+      net.isZero() ? '0.0' : profit.dividedBy(net).times(100).toFixed(1);
+
+    const byCategory = rows.map((r) => {
+      const net = money(r.subtotal ?? '0');
+      const cost = money(r.cost ?? '0');
+      const profit = net.minus(cost);
+      return {
+        category: r.category ?? 'Sin categoría',
+        qty: money(r.qty ?? '0').toString(),
+        total: money(r.total ?? '0').toFixed(2),
+        netSales: net.toFixed(2),
+        cost: cost.toFixed(2),
+        profit: profit.toFixed(2),
+        margin: margin(profit, net),
+      };
+    });
+
+    const netSales = sum(byCategory.map((c) => money(c.netSales)));
+    const cost = sum(byCategory.map((c) => money(c.cost)));
+    const profit = netSales.minus(cost);
+
+    return {
+      netSales: netSales.toFixed(2),
+      cost: cost.toFixed(2),
+      netProfit: profit.toFixed(2),
+      margin: margin(profit, netSales),
+      byCategory,
     };
   }
 

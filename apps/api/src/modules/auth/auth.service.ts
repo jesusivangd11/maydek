@@ -72,25 +72,32 @@ export class AuthService {
     }
   }
 
-  // ── Login con correo y contraseña ──────────────────────────────────────────
+  // ── Login con usuario y clave (PIN o contraseña) ───────────────────────────
 
+  /**
+   * Se entra con el USUARIO y la clave. «Carla», «CARLA» y «carla» son la
+   * misma persona: el usuario se guarda y se busca en minúsculas. También
+   * acepta el correo, por quien ya estaba acostumbrado.
+   *
+   * La clave sí distingue mayúsculas: es lo único que protege la cuenta.
+   */
   async login(
-    email: string,
+    identifier: string,
     password: string,
     ctx: LoginContext = {},
   ): Promise<LoginResponse & { refreshToken: string }> {
-    const normalizedEmail = email.trim().toLowerCase();
+    const who = identifier.trim().toLowerCase();
 
     const user = await this.prisma.user.findFirst({
-      where: { email: normalizedEmail, deletedAt: null },
+      where: { OR: [{ username: who }, { email: who }], deletedAt: null },
     });
 
     // Se ejecuta la verificación aun sin usuario, con un hash señuelo, para que
-    // el tiempo de respuesta no revele si el correo existe.
+    // el tiempo de respuesta no revele si el usuario existe.
     if (!user) {
       await this.dummyVerify();
-      await this.recordFailedLogin(normalizedEmail, 'usuario inexistente');
-      throw new UnauthenticatedError('Correo o contraseña incorrectos');
+      await this.recordFailedLogin(who, 'usuario inexistente');
+      throw new UnauthenticatedError('Usuario o clave incorrectos');
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -98,7 +105,7 @@ export class AuthService {
     }
 
     if (user.status !== 'ACTIVE') {
-      await this.recordFailedLogin(normalizedEmail, `cuenta ${user.status}`);
+      await this.recordFailedLogin(who, `cuenta ${user.status}`);
       throw new UnauthenticatedError('La cuenta no está activa');
     }
 
@@ -106,8 +113,8 @@ export class AuthService {
 
     if (!valid) {
       await this.registerFailedAttempt(user.id, user.failedAttempts);
-      await this.recordFailedLogin(normalizedEmail, 'contraseña incorrecta');
-      throw new UnauthenticatedError('Correo o contraseña incorrectos');
+      await this.recordFailedLogin(who, 'clave incorrecta');
+      throw new UnauthenticatedError('Usuario o clave incorrectos');
     }
 
     await this.prisma.user.update({

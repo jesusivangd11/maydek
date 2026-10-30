@@ -4,12 +4,17 @@ import { formatDateTime, formatMoney, formatQty } from '@pos/lib/format';
 import { Alert, Button, Card, EmptyState, PageHeader, Segmented, Select } from '@pos/ui';
 import type { ScreenProps } from '../App';
 import { daysAgo, downloadCsv, endOfDay, startOfDay, useLoad } from '../lib/util';
+import { CutsTab, DepartmentsTab, Stats, SummaryTab } from './ReportsExtra';
 
 /**
  * Reportes de mostrador.
  *
+ *   · Resumen: el periodo de un vistazo (ventas, IVA, descuentos, devoluciones,
+ *     ganancia neta, formas de pago, cajeros, horas y días).
  *   · Ventas: ticket por ticket en el periodo, con cajero y forma de pago.
- *   · Por artículo: qué se vendió y cuánto dejó.
+ *   · Departamentos: ventas, costo y ganancia por categoría.
+ *   · Por artículo: qué se vendió, a qué costo y cuánto dejó.
+ *   · Cortes: los turnos de caja con su arqueo.
  *   · Mayoreo: solo las ventas hechas con F11.
  *   · Inventario: existencias, con los negativos (vendidos sin existencia),
  *     agotados y bajo mínimo a la vista.
@@ -17,7 +22,7 @@ import { daysAgo, downloadCsv, endOfDay, startOfDay, useLoad } from '../lib/util
  * Todo se exporta a CSV para abrirlo en Excel.
  */
 
-type Tab = 'ventas' | 'articulos' | 'mayoreo' | 'inventario';
+type Tab = 'resumen' | 'ventas' | 'departamentos' | 'articulos' | 'mayoreo' | 'cortes' | 'inventario';
 type Period = 'hoy' | 'ayer' | '7' | '30' | 'mes';
 
 function rangeOf(period: Period): { from: string; to: string } {
@@ -50,48 +55,41 @@ export function ReportsScreen({ user }: ScreenProps) {
   const tabs = [
     ...(canSales
       ? ([
+          { value: 'resumen', label: 'Resumen' },
           { value: 'ventas', label: 'Ventas' },
+          { value: 'departamentos', label: 'Departamentos' },
           { value: 'articulos', label: 'Por artículo' },
           { value: 'mayoreo', label: 'Mayoreo' },
+          { value: 'cortes', label: 'Cortes' },
         ] as const)
       : []),
     ...(canInventory ? ([{ value: 'inventario', label: 'Inventario' }] as const) : []),
   ];
-  const [tab, setTab] = useState<Tab>(tabs[0]?.value ?? 'ventas');
+  const [tab, setTab] = useState<Tab>(tabs[0]?.value ?? 'resumen');
   const [period, setPeriod] = useState<Period>('hoy');
 
   return (
     <div className="page">
-      <PageHeader title="Reportes" subtitle="Ventas, mayoreo e inventario." />
+      <PageHeader title="Reportes" subtitle="Ventas, ganancia por departamento, cortes, mayoreo e inventario." />
       {tabs.length === 0 ? (
         <Alert tone="warning">Tu usuario no tiene permiso para ver reportes.</Alert>
       ) : (
         <>
           <div className="report-bar">
             <Segmented label="Reporte" options={[...tabs]} value={tab} onChange={setTab} />
-            {tab !== 'inventario' && (
+            {tab !== 'inventario' && tab !== 'cortes' && (
               <Segmented label="Periodo" options={PERIODS} value={period} onChange={setPeriod} />
             )}
           </div>
+          {tab === 'resumen' && <SummaryTab range={rangeOf(period)} />}
           {tab === 'ventas' && <SalesTab period={period} />}
+          {tab === 'departamentos' && <DepartmentsTab range={rangeOf(period)} />}
+          {tab === 'cortes' && <CutsTab />}
           {tab === 'articulos' && <ProductsTab period={period} />}
           {tab === 'mayoreo' && <WholesaleTab period={period} />}
           {tab === 'inventario' && <InventoryTab />}
         </>
       )}
-    </div>
-  );
-}
-
-function Stats({ items }: { items: { label: string; value: string; key?: boolean }[] }) {
-  return (
-    <div className="stats">
-      {items.map((s) => (
-        <div key={s.label} className={`stat ${s.key ? 'stat--key' : ''}`}>
-          <span className="stat__label">{s.label}</span>
-          <span className={`stat__value ${s.key ? '' : 'stat__value--sm'}`}>{s.value}</span>
-        </div>
-      ))}
     </div>
   );
 }
@@ -130,6 +128,7 @@ function SalesTab({ period }: { period: Period }) {
                 Artículos: s.items,
                 'Forma de pago': s.methods,
                 Mayoreo: s.wholesale ? 'Sí' : '',
+                Descuento: s.discount,
                 Total: s.total,
                 ...(s.profit !== undefined ? { Utilidad: s.profit } : {}),
               })),
@@ -147,8 +146,17 @@ function SalesTab({ period }: { period: Period }) {
               { label: 'Total vendido', value: formatMoney(r.summary.total), key: true },
               { label: 'Ventas', value: String(r.summary.count) },
               { label: 'Ticket promedio', value: formatMoney(r.summary.averageTicket) },
-              ...(r.summary.profit !== undefined ? [{ label: 'Utilidad', value: formatMoney(r.summary.profit) }] : []),
-              { label: 'Canceladas', value: String(r.summary.cancelled) },
+              { label: 'Ventas sin IVA', value: formatMoney(r.summary.netSales) },
+              { label: 'IVA', value: formatMoney(r.summary.tax) },
+              { label: 'Descuentos', value: formatMoney(r.summary.discount) },
+              ...(r.summary.cost !== undefined ? [{ label: 'Costo', value: formatMoney(r.summary.cost) }] : []),
+              ...(r.summary.profit !== undefined
+                ? [
+                    { label: 'Ganancia neta', value: formatMoney(r.summary.profit) },
+                    { label: 'Margen', value: `${Number(r.summary.margin ?? 0).toFixed(1)} %` },
+                  ]
+                : []),
+              { label: 'Canceladas', value: `${r.summary.cancelled} (${formatMoney(r.summary.cancelledTotal)})` },
             ]}
           />
           <SalesTable rows={r.data} />
@@ -215,7 +223,7 @@ function ProductsTab({ period }: { period: Period }) {
           onClick={() =>
             downloadCsv(
               'ventas-por-articulo.csv',
-              rows.map((p) => ({ SKU: p.sku, Artículo: p.name, Cantidad: p.qty, Total: p.total, Utilidad: p.profit ?? '' })),
+              rows.map((p) => ({ SKU: p.sku, Artículo: p.name, Cantidad: p.qty, Total: p.total, ...(p.profit !== undefined ? { Costo: p.cost ?? '', Utilidad: p.profit } : {}) })),
             )
           }
         >
@@ -237,6 +245,7 @@ function ProductsTab({ period }: { period: Period }) {
                 <th>Artículo</th>
                 <th className="table__num">Cantidad</th>
                 <th className="table__money">Total</th>
+                {rows[0]?.profit !== undefined && <th className="table__money">Costo</th>}
                 {rows[0]?.profit !== undefined && <th className="table__money">Utilidad</th>}
               </tr>
             </thead>
@@ -247,6 +256,7 @@ function ProductsTab({ period }: { period: Period }) {
                   <td>{p.name}</td>
                   <td className="table__num">{formatQty(p.qty)}</td>
                   <td className="table__money">{formatMoney(p.total)}</td>
+                  {p.profit !== undefined && <td className="table__money">{formatMoney(p.cost ?? '0')}</td>}
                   {p.profit !== undefined && <td className="table__money">{formatMoney(p.profit)}</td>}
                 </tr>
               ))}

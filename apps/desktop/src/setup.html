@@ -73,19 +73,26 @@
                 <input name="adminName" required minlength="2" maxlength="120" autocomplete="name" />
               </label>
               <label class="field">
-                <span>Correo (con él entras al sistema)</span>
-                <input name="adminEmail" type="email" required maxlength="200" autocomplete="email" />
+                <span>Usuario <small>(con él entras al sistema)</small></span>
+                <input name="adminUsername" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._\-]{3,32}" autocomplete="username" autocapitalize="none" spellcheck="false" />
               </label>
             </div>
             <div class="row">
               <label class="field">
-                <span>Contraseña <small>(mínimo 10 caracteres)</small></span>
-                <input name="adminPassword" type="password" required minlength="10" maxlength="128" autocomplete="new-password" />
+                <span>PIN o contraseña <small>(PIN de 4 o más dígitos, o contraseña de 8 o más caracteres)</small></span>
+                <input name="adminPassword" type="password" required pattern="[0-9]{4,12}|.{8,128}" maxlength="128" autocomplete="new-password" />
               </label>
               <label class="field">
-                <span>Repite la contraseña</span>
-                <input name="adminPassword2" type="password" required minlength="10" maxlength="128" autocomplete="new-password" />
+                <span>Repítela</span>
+                <input name="adminPassword2" type="password" required maxlength="128" autocomplete="new-password" />
               </label>
+            </div>
+            <div class="row">
+              <label class="field">
+                <span>Correo <small>(opcional)</small></span>
+                <input name="adminEmail" type="email" maxlength="200" autocomplete="email" />
+              </label>
+              <p class="hint">Un PIN corto es cómodo pero más fácil de adivinar; una contraseña larga es más segura.</p>
             </div>
             <div class="row">
               <label class="field">

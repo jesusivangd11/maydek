@@ -7,7 +7,7 @@
  *
  *   node tools/demo-data.mjs <archivo-de-credenciales.json> [http://localhost:3210]
  *
- * El archivo es el mismo JSON del asistente (adminEmail y adminPassword).
+ * El archivo es el mismo JSON del asistente (adminUsername, adminEmail y adminPassword).
  * Nunca correrlo contra la base de un cliente.
  */
 import { readFileSync } from 'node:fs';
@@ -28,7 +28,7 @@ async function call(method, path, body) {
   return json;
 }
 
-token = (await call('POST', '/auth/login', { email: creds.adminEmail, password: creds.adminPassword })).accessToken;
+token = (await call('POST', '/auth/login', { username: creds.adminUsername ?? creds.adminEmail, password: creds.adminPassword })).accessToken;
 
 const categories = {};
 for (const name of ['Bebidas', 'Abarrotes', 'Papelería', 'Ropa']) {

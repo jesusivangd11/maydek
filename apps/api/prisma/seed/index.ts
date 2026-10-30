@@ -548,6 +548,8 @@ async function seedAdminUser(branchId: string) {
   step('Usuario administrador');
 
   const email = (process.env.SEED_ADMIN_EMAIL ?? 'admin@distribuidora.local').toLowerCase();
+  // Con lo que entra: siempre en minúsculas.
+  const username = (process.env.SEED_ADMIN_USERNAME ?? email.split('@')[0] ?? 'admin').trim().toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD ?? 'Admin.Cambiar123';
   const name = process.env.SEED_ADMIN_NAME ?? 'Administrador';
   const pin = process.env.SEED_ADMIN_PIN ?? '1234';
@@ -555,9 +557,9 @@ async function seedAdminUser(branchId: string) {
   // escribe en el asistente de primer uso: ahí no hay nada que obligar a cambiar.
   const mustChangePassword = process.env.SEED_ADMIN_MUST_CHANGE !== 'false';
 
-  const existing = await prisma.user.findFirst({ where: { email } });
+  const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } });
   if (existing) {
-    console.log(`   · ${email} ya existe; no se toca su contraseña`);
+    console.log(`   · ${username} ya existe; no se toca su contraseña`);
     return existing;
   }
 
@@ -569,6 +571,7 @@ async function seedAdminUser(branchId: string) {
   const user = await prisma.user.create({
     data: {
       id: userId,
+      username,
       email,
       name,
       passwordHash: await argon2.hash(password, {
@@ -592,7 +595,7 @@ async function seedAdminUser(branchId: string) {
     },
   });
 
-  console.log(`   ✓ ${email}`);
+  console.log(`   ✓ ${username} (${email})`);
   if (mustChangePassword) {
     console.log(`   ⚠ Contraseña temporal: ${password}`);
     console.log(`   ⚠ PIN temporal de POS: ${pin} — CÁMBIALOS EN EL PRIMER ACCESO`);

@@ -18,6 +18,7 @@ import type { CreateUserDto, ListUsersDto, UpdateUserDto } from './dto/users.dto
 /** Campos que se devuelven de un usuario. NUNCA hashes ni secretos. */
 const USER_SELECT = {
   id: true,
+  username: true,
   email: true,
   name: true,
   phone: true,
@@ -50,6 +51,7 @@ export class UsersService {
           ? {
               OR: [
                 { name: { contains: query.search, mode: 'insensitive' as const } },
+                { username: { contains: query.search, mode: 'insensitive' as const } },
                 { email: { contains: query.search, mode: 'insensitive' as const } },
               ],
             }
@@ -106,14 +108,21 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto) {
-    const email = dto.email.trim().toLowerCase();
+    const username = dto.username.trim().toLowerCase();
+    // El correo es opcional; la columna es única y obligatoria, así que quien
+    // no lo da recibe uno interno derivado de su usuario.
+    const email = dto.email?.trim().toLowerCase() || `${username}@sin-correo.maydek`;
 
     const existing = await this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
-      select: { id: true },
+      where: { OR: [{ username }, { email }] },
+      select: { username: true },
     });
     if (existing) {
-      throw new ConflictError('Ya existe un usuario con ese correo');
+      throw new ConflictError(
+        existing.username === username
+          ? `El usuario «${username}» ya existe`
+          : 'Ya existe un usuario con ese correo',
+      );
     }
 
     const roles = await this.prisma.role.findMany({
@@ -131,6 +140,7 @@ export class UsersService {
       const user = await tx.user.create({
         data: {
           id: userId,
+          username,
           email,
           name: dto.name,
           phone: dto.phone ?? null,
@@ -157,15 +167,15 @@ export class UsersService {
         action: AUDIT_ACTIONS.USER_CREATE,
         entityType: 'user',
         entityId: userId,
-        entityLabel: `${dto.name} (${email})`,
-        after: { email, name: dto.name, roles: dto.roleCodes },
+        entityLabel: `${dto.name} (${username})`,
+        after: { username, email, name: dto.name, roles: dto.roleCodes },
       });
 
       await this.outbox.publish({
         eventType: EVENT_TYPES.USER_CREATED,
         aggregateType: 'user',
         aggregateId: userId,
-        payload: { id: userId, email, name: dto.name, roles: dto.roleCodes },
+        payload: { id: userId, username, email, name: dto.name, roles: dto.roleCodes },
       });
 
       return user;
@@ -181,10 +191,17 @@ export class UsersService {
     });
     if (!before) throw new NotFoundError('el usuario', id);
 
+    const email = dto.email?.trim().toLowerCase();
+    if (email && email !== before.email) {
+      const taken = await this.prisma.user.findFirst({ where: { email, id: { not: id } }, select: { id: true } });
+      if (taken) throw new ConflictError('Ya existe un usuario con ese correo');
+    }
+
     return this.prisma.transaction(async (tx) => {
       const after = await tx.user.update({
         where: { id },
         data: {
+          ...(email ? { email } : {}),
           ...(dto.name !== undefined ? { name: dto.name } : {}),
           ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
           ...(dto.status !== undefined ? { status: dto.status } : {}),

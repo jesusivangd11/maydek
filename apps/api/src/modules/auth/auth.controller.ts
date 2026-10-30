@@ -53,13 +53,16 @@ export class AuthController {
   // Límite estricto: es el endpoint que se ataca por fuerza bruta. Estrecha el
   // bucket global solo para esta ruta.
   @Throttle({ default: { limit: AUTH_LIMIT, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Iniciar sesión con correo y contraseña' })
+  @ApiOperation({ summary: 'Iniciar sesión con usuario y clave (PIN o contraseña)' })
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.auth.login(dto.email, dto.password, {
+    const who = dto.username ?? dto.email;
+    if (!who?.trim()) throw new UnauthenticatedError('Escribe tu usuario');
+
+    const result = await this.auth.login(who, dto.password, {
       ipAddress: req.ip,
       userAgent: req.header('user-agent'),
     });

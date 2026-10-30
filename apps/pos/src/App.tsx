@@ -103,10 +103,10 @@ export function App() {
   }, [refreshCash]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (username: string, password: string) => {
       setError(null);
       try {
-        const result = await api.login(email, password);
+        const result = await api.login(username, password);
         setAccessToken(result.accessToken);
         setUser(result.user);
         await Promise.all([refreshCash(), loadSettings()]);
@@ -281,30 +281,34 @@ export function App() {
 /**
  * Credenciales precargadas MIENTRAS SE DESARROLLA.
  *
- * Salen de `VITE_DEV_EMAIL` y `VITE_DEV_PASSWORD` del `.env` de la raíz, que
+ * Salen de `VITE_DEV_USER` y `VITE_DEV_PASSWORD` del `.env` de la raíz, que
  * está fuera del repositorio. En cualquier compilación de producción vite las
  * sustituye por cadena vacía, así que estos campos salen en blanco pase lo que
  * pase: no hay forma de que una contraseña llegue a una tienda real por aquí.
  */
-const DEV_EMAIL = import.meta.env.DEV ? (import.meta.env.VITE_DEV_EMAIL ?? '') : '';
+// VITE_DEV_USER es el usuario; VITE_DEV_EMAIL sigue valiendo (el servidor acepta
+// correo o usuario).
+const DEV_USER = import.meta.env.DEV
+  ? (import.meta.env.VITE_DEV_USER ?? import.meta.env.VITE_DEV_EMAIL ?? '')
+  : '';
 const DEV_PASSWORD = import.meta.env.DEV ? (import.meta.env.VITE_DEV_PASSWORD ?? '') : '';
 
-const LAST_EMAIL_KEY = 'pv.pos.lastEmail';
+const LAST_USER_KEY = 'pv.pos.lastUser';
 
 /** Logotipos de Maydek en `public/brand`, relativos a la base de la app. */
 const BRAND_DIR = `${import.meta.env.BASE_URL}brand/`;
 
-function readLastEmail(): string {
+function readLastUser(): string {
   try {
-    return localStorage.getItem(LAST_EMAIL_KEY) ?? '';
+    return localStorage.getItem(LAST_USER_KEY) ?? '';
   } catch {
     return '';
   }
 }
 
-function rememberEmail(email: string): void {
+function rememberUser(username: string): void {
   try {
-    localStorage.setItem(LAST_EMAIL_KEY, email.trim());
+    localStorage.setItem(LAST_USER_KEY, username.trim().toLowerCase());
   } catch {
     // Sin almacenamiento (modo privado): solo se pierde la comodidad.
   }
@@ -314,12 +318,12 @@ function PosLogin({
   onSubmit,
   error,
 }: {
-  onSubmit: (email: string, password: string) => Promise<void>;
+  onSubmit: (username: string, password: string) => Promise<void>;
   error: string | null;
 }) {
   // En una caja suele entrar siempre la misma persona: se recuerda el último
-  // correo usado en ESTE equipo (nunca la contraseña).
-  const [email, setEmail] = useState(() => DEV_EMAIL || readLastEmail());
+  // usuario en ESTE equipo (nunca la clave).
+  const [username, setUsername] = useState(() => DEV_USER || readLastUser());
   const [password, setPassword] = useState(DEV_PASSWORD);
   const [busy, setBusy] = useState(false);
 
@@ -329,9 +333,9 @@ function PosLogin({
         className="login"
         onSubmit={async (event) => {
           event.preventDefault();
-          rememberEmail(email);
+          rememberUser(username);
           setBusy(true);
-          await onSubmit(email, password);
+          await onSubmit(username, password);
           setBusy(false);
         }}
         onKeyDown={(event) => {
@@ -344,23 +348,27 @@ function PosLogin({
         </div>
         <div className="login__head">
           <span className="login__title">Iniciar sesión</span>
-          <span className="login__hint">Entra con tu correo y contraseña para empezar a vender.</span>
+          <span className="login__hint">Escribe tu usuario y tu PIN o contraseña para empezar a vender.</span>
         </div>
 
         <div className="login__form">
-          <Field label="Correo" htmlFor="email">
+          <Field label="Usuario" htmlFor="username" hint="No importa si usas mayúsculas o minúsculas.">
             <TextInput
-              id="email"
-              type="email"
+              id="username"
               large
-              value={email}
+              value={username}
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
-              onChange={(event) => setEmail(event.target.value)}
+              // Con el usuario recordado, el foco pasa directo a la clave.
+              autoFocus={!username}
+              onChange={(event) => setUsername(event.target.value)}
             />
           </Field>
 
-          <Field label="Contraseña" htmlFor="password">
+          <Field label="PIN o contraseña" htmlFor="password">
             <TextInput
               id="password"
               type="password"
@@ -368,9 +376,7 @@ function PosLogin({
               value={password}
               autoComplete="current-password"
               required
-              // Con la contraseña ya puesta el foco sobra aquí: va al botón,
-              // para que entrar sea un Enter y nada más.
-              autoFocus={!DEV_PASSWORD}
+              autoFocus={Boolean(username) && !DEV_PASSWORD}
               onChange={(event) => setPassword(event.target.value)}
             />
           </Field>
