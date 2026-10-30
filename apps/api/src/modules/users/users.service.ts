@@ -197,10 +197,17 @@ export class UsersService {
       if (taken) throw new ConflictError('Ya existe un usuario con ese correo');
     }
 
+    const username = dto.username;
+    if (username && username !== before.username) {
+      const taken = await this.prisma.user.findFirst({ where: { username, id: { not: id } }, select: { id: true } });
+      if (taken) throw new ConflictError('Ya existe una persona con ese usuario');
+    }
+
     return this.prisma.transaction(async (tx) => {
       const after = await tx.user.update({
         where: { id },
         data: {
+          ...(username ? { username } : {}),
           ...(email ? { email } : {}),
           ...(dto.name !== undefined ? { name: dto.name } : {}),
           ...(dto.phone !== undefined ? { phone: dto.phone } : {}),

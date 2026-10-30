@@ -19,7 +19,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { cpSync, existsSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -186,3 +186,19 @@ const result = await builder.build({
 
 console.log('✓ Listo:');
 for (const file of result) console.log(`   ${file}`);
+
+// La web muestra la versión y el tamaño del instalador: se actualizan aquí para
+// que nunca queden atrás de lo publicado. (Después hay que desplegar la web.)
+{
+  const webConfig = path.join(desktop, '..', 'web', 'src', 'config.js');
+  const version = JSON.parse(readFileSync(path.join(desktop, 'package.json'), 'utf8')).version;
+  const installer = path.join(stage, 'dist', 'Maydek-Setup.exe');
+  if (existsSync(webConfig) && existsSync(installer)) {
+    const size = `${Math.round(statSync(installer).size / 1024 / 1024)} MB`;
+    const next = readFileSync(webConfig, 'utf8')
+      .replace(/version: '[^']*',/, `version: '${version}',`)
+      .replace(/size: '[^']*',/, `size: '${size}',`);
+    writeFileSync(webConfig, next);
+    console.log(`✓ Web: versión ${version} · ${size} (falta desplegar apps/web)`);
+  }
+}

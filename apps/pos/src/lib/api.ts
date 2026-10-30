@@ -1006,7 +1006,7 @@ export const api = {
     request<UserRow>('/users', { method: 'POST', body }),
   updateUser: (
     id: string,
-    body: { name?: string; email?: string; phone?: string; status?: string; password?: string; pin?: string },
+    body: { name?: string; username?: string; email?: string; phone?: string; status?: string; password?: string; pin?: string },
   ) => request<UserRow>(`/users/${id}`, { method: 'PATCH', body }),
   getUser: (id: string) => request<UserRow & { permissions: string[] }>(`/users/${id}`),
   listPermissions: () => request<PermissionGroup[]>('/users/permissions'),

@@ -223,7 +223,7 @@ function AdminLogin({
         </div>
 
         <div className="login__form">
-          <Field label="Usuario" htmlFor="username" hint="No importa si usas mayúsculas o minúsculas.">
+          <Field label="Usuario" htmlFor="username">
             <TextInput
               id="username"
               large

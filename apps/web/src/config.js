@@ -37,7 +37,7 @@ export const SITE = {
   download: {
     // Siempre apunta a la versión más reciente publicada en maydek-releases.
     url: 'https://github.com/jesusivangd11/maydek-releases/releases/latest/download/Maydek-Setup.exe',
-    version: '1.0.0',
+    version: '1.0.2',
     size: '198 MB',
   },
 

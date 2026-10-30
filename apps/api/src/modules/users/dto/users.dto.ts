@@ -67,6 +67,10 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto {
+  @ApiPropertyOptional({ description: 'Usuario con el que entra' })
+  @IsOptional() @Transform(lower) @Matches(USERNAME_PATTERN, { message: USERNAME_MESSAGE })
+  username?: string;
+
   @ApiPropertyOptional() @IsOptional() @IsString() @Length(2, 120) name?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(32) phone?: string;
   @ApiPropertyOptional({ enum: UserStatus }) @IsOptional() @IsEnum(UserStatus) status?: UserStatus;

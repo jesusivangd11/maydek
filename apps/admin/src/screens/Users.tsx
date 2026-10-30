@@ -270,6 +270,7 @@ function UserDialog({
       if (target) {
         await api.updateUser(target.id, {
           name,
+          username: username.trim().toLowerCase(),
           email: email.trim() || undefined,
           phone: phone || undefined,
           ...(password ? { password } : {}),
@@ -312,7 +313,8 @@ function UserDialog({
   const invalid =
     name.trim().length < 2 ||
     selected.length === 0 ||
-    (!target && (!USERNAME_RE.test(username.trim().toLowerCase()) || !validKey(password))) ||
+    !USERNAME_RE.test(username.trim().toLowerCase()) ||
+    (!target && !validKey(password)) ||
     (email.trim().length > 0 && !email.includes('@')) ||
     (Boolean(target) && password.length > 0 && !validKey(password)) ||
     (pin.length > 0 && pin.length < 4);
@@ -349,11 +351,10 @@ function UserDialog({
         <Field
           label="Usuario"
           htmlFor="u-username"
-          hint={target ? 'Con este nombre entra al sistema; no se puede cambiar.' : '3 a 32 letras, números, punto, guion o guion bajo. Con él entra al sistema.'}
+          hint="3 a 32 letras, números, punto, guion o guion bajo. Con él entra al sistema."
         >
           <TextInput
             id="u-username"
-            disabled={Boolean(target)}
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
