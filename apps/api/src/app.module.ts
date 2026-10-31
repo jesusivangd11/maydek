@@ -14,6 +14,7 @@ import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
 import { CashModule } from './modules/cash/cash.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HealthModule } from './modules/health/health.module';
+import { LicenseModule } from './modules/license/license.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { PosContextModule } from './modules/pos-context/pos-context.module';
 import { SalesModule } from './modules/sales/sales.module';
@@ -73,6 +74,7 @@ const config = env();
     UsersModule,
     HealthModule,
     SettingsModule,
+    LicenseModule,
 
     // ── Operación ──
     PosContextModule,

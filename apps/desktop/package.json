@@ -1,7 +1,7 @@
 {
   "name": "@pv/desktop",
   "productName": "Maydek",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Maydek — punto de venta de escritorio (Electron, base de datos local)",
   "main": "src/main.cjs",

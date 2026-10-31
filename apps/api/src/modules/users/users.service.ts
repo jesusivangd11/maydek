@@ -12,6 +12,7 @@ import { PrismaService } from '../../core/database/prisma.service';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../core/errors/domain-errors';
 import { newId } from '../../core/ids';
 import { OutboxService } from '../../core/outbox/outbox.service';
+import { LicenseService } from '../license/license.service';
 import { AuthService } from '../auth/auth.service';
 import type { CreateUserDto, ListUsersDto, UpdateUserDto } from './dto/users.dto';
 
@@ -38,6 +39,7 @@ export class UsersService {
     private readonly auth: AuthService,
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
+    private readonly license: LicenseService,
   ) {}
 
   async list(query: ListUsersDto) {
@@ -108,6 +110,9 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto) {
+    await this.license.assertWithinLimit('users', () =>
+      this.prisma.user.count({ where: { deletedAt: null, status: { not: 'ARCHIVED' } } }),
+    );
     const username = dto.username.trim().toLowerCase();
     // El correo es opcional; la columna es única y obligatoria, así que quien
     // no lo da recibe uno interno derivado de su usuario.

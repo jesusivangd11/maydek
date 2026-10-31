@@ -647,6 +647,21 @@ export interface StoreSettings {
   'sales.confirmRemove': boolean;
 }
 
+/** Estado de la licencia del sistema (ver modules/license en el API). */
+export interface LicenseStatus {
+  state: 'LICENSED' | 'TRIAL' | 'TRIAL_EXPIRED' | 'EXPIRED';
+  canSell: boolean;
+  installationCode: string;
+  plan: 'BASICO' | 'PROFESIONAL' | 'EMPRESARIAL' | null;
+  kind: 'PERMANENT' | 'TERM' | null;
+  licensee: string | null;
+  licenseId: string | null;
+  expiresAt: string | null;
+  daysLeft: number | null;
+  limits: { terminals: number | null; users: number | null; products: number | null };
+  problem: string | null;
+}
+
 export interface CommonItem {
   variantId: string;
   sku: string;
@@ -758,6 +773,12 @@ export const api = {
 
   saveSettings: (values: Partial<StoreSettings>) =>
     request<StoreSettings>('/settings', { method: 'PUT', body: { values } }),
+
+  // ── Licencia ──
+  getLicense: () => request<LicenseStatus>('/license'),
+
+  activateLicense: (token: string) =>
+    request<LicenseStatus>('/license', { method: 'PUT', body: { token } }),
 
   listCategories: (includeInactive = false) =>
     request<Category[]>(`/categories${toQuery({ includeInactive: includeInactive || undefined })}`),

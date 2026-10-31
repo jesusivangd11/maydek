@@ -328,3 +328,35 @@
 .section-label {
   margin: var(--s-3) 0 0;
 }
+
+/* Licencia */
+.kv {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s-2) var(--s-5);
+  margin: var(--s-3) 0 0;
+}
+
+.kv dt {
+  color: var(--text-muted, inherit);
+}
+
+.kv dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.license-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  background: var(--warning-bg, #fff4d6);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.license-bar--danger {
+  background: var(--danger-bg, #fde4e4);
+}

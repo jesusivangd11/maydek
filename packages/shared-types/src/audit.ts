@@ -18,6 +18,7 @@ export const AUDIT_ACTIONS = {
   ROLE_UPDATE: 'role.update',
   ROLE_PERMISSIONS_UPDATE: 'role.permissions.update',
   SETTINGS_UPDATE: 'settings.update',
+  LICENSE_ACTIVATE: 'license.activate',
   // Fases posteriores
   PRODUCT_CREATE: 'product.create',
   PRODUCT_UPDATE: 'product.update',

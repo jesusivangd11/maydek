@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { ApiError, api, setAccessToken, type SessionUser } from '@pos/lib/api';
+import { ApiError, api, setAccessToken, type LicenseStatus, type SessionUser } from '@pos/lib/api';
 import { Alert, Button, Field, Icon, TextInput, type IconName } from '@pos/ui';
 import { CashSessionsScreen } from './screens/CashSessions';
 import { CustomersScreen } from './screens/Customers';
 import { DashboardScreen } from './screens/Dashboard';
 import { InventoryScreen } from './screens/Inventory';
+import { LicenseScreen } from './screens/License';
 import { PriceListsScreen } from './screens/PriceLists';
 import { ProductsScreen } from './screens/Products';
 import { PurchasesScreen } from './screens/Purchases';
@@ -51,6 +52,7 @@ const SECTIONS: Section[] = [
   { id: 'cortes', label: 'Cortes de caja', icon: 'cash', permission: 'cash.report.z', render: (p) => <CashSessionsScreen {...p} /> },
   { id: 'usuarios', label: 'Usuarios', icon: 'user', permission: 'user.view', render: (p) => <UsersScreen {...p} /> },
   { id: 'configuracion', label: 'Configuración', icon: 'settings', permission: 'settings.view', render: (p) => <SettingsScreen {...p} /> },
+  { id: 'licencia', label: 'Licencia', icon: 'tag', permission: 'settings.view', render: (p) => <LicenseScreen {...p} /> },
   { id: 'soporte', label: 'Soporte', icon: 'help', permission: 'support.manage', render: (p) => <SupportScreen {...p} /> },
 ];
 
@@ -77,6 +79,7 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [route, setRoute] = useState(currentHash());
+  const [license, setLicense] = useState<LicenseStatus | null>(null);
 
   useEffect(() => {
     api
@@ -92,6 +95,15 @@ export function App() {
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  // Aviso de prueba o vencimiento: se consulta al entrar y cada hora.
+  useEffect(() => {
+    if (!user) return;
+    const load = () => api.getLicense().then(setLicense).catch(() => undefined);
+    void load();
+    const timer = setInterval(load, 3_600_000);
+    return () => clearInterval(timer);
+  }, [user]);
 
   const login = useCallback(async (username: string, password: string) => {
     setError(null);
@@ -165,6 +177,7 @@ export function App() {
       </aside>
 
       <main className="admin__content">
+        {license && <LicenseBar license={license} />}
         {active ? (
           <div key={active.id}>{active.render({ user })}</div>
         ) : (
@@ -176,6 +189,25 @@ export function App() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+/** Franja de aviso: prueba en curso, licencia por vencer o ya sin vigencia. */
+function LicenseBar({ license }: { license: LicenseStatus }) {
+  const ending = license.daysLeft !== null && license.daysLeft <= 7;
+  if (license.state === 'LICENSED' && !ending) return null;
+
+  let text: string;
+  if (license.state === 'TRIAL') text = `Periodo de prueba: te quedan ${license.daysLeft} días.`;
+  else if (license.state === 'LICENSED') text = `Tu licencia vence en ${license.daysLeft} días.`;
+  else if (license.state === 'EXPIRED') text = 'Tu licencia venció: no se pueden registrar ventas.';
+  else text = 'Terminó el periodo de prueba: no se pueden registrar ventas.';
+
+  return (
+    <div className={license.canSell ? 'license-bar' : 'license-bar license-bar--danger'} role="status">
+      <span>{text}</span>
+      <a href="#/licencia">{license.canSell ? 'Ver licencia' : 'Activar licencia'}</a>
     </div>
   );
 }

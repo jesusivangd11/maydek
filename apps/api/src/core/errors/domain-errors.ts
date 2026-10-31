@@ -44,6 +44,13 @@ export class ForbiddenError extends DomainError {
   }
 }
 
+/** Sin licencia vigente, o el plan no alcanza para lo que se intenta. */
+export class LicenseRequiredError extends DomainError {
+  constructor(message: string) {
+    super(ERROR_CODES.LICENSE_REQUIRED, message, 402);
+  }
+}
+
 export class NotFoundError extends DomainError {
   constructor(entity: string, id?: string) {
     super(

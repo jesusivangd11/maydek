@@ -22,6 +22,7 @@ import type {
   UpdateVariantDto,
 } from './dto/catalog.dto';
 import { StockPostingService } from '../inventory/stock-posting.service';
+import { LicenseService } from '../license/license.service';
 import { COMMON_ITEM_SKU, PricingService } from './pricing.service';
 
 /**
@@ -44,6 +45,7 @@ export class CatalogService {
     private readonly posContext: PosContextService,
     private readonly audit: AuditService,
     private readonly stock: StockPostingService,
+    private readonly license: LicenseService,
   ) {}
 
   /**
@@ -431,6 +433,9 @@ export class CatalogService {
    * el implícito con el SKU base: así todo lo que se vende tiene la misma forma.
    */
   async createProduct(dto: CreateProductDto, actor: AuthenticatedUser) {
+    await this.license.assertWithinLimit('products', () =>
+      this.prisma.client.product.count({ where: { deletedAt: null } }),
+    );
     // Existencia inicial: entra al almacén de la sucursal de quien da de alta.
     const wantsStock =
       (dto.variants ?? []).some((v) => v.initialStock && Number(v.initialStock) > 0) ||

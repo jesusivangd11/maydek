@@ -37,8 +37,8 @@ export const SITE = {
   download: {
     // Siempre apunta a la versión más reciente publicada en maydek-releases.
     url: 'https://github.com/jesusivangd11/maydek-releases/releases/latest/download/Maydek-Setup.exe',
-    version: '1.0.2',
-    size: '198 MB',
+    version: '1.0.3',
+    size: '189 MB',
   },
 
   /** Precios en MXN con IVA incluido. El anual se cobra como 10 meses. */

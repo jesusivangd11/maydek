@@ -37,6 +37,7 @@ import { SettingsService } from '../settings/settings.service';
 import { refreshCustomerMetrics } from '../customers/customer-metrics';
 import { CUSTOMER_NAME_SELECT, customerDisplayName } from '../customers/customer-name';
 import { StockPostingService } from '../inventory/stock-posting.service';
+import { LicenseService } from '../license/license.service';
 import { PosContextService } from '../pos-context/pos-context.service';
 import type { CreateSaleDto } from './dto/sales.dto';
 
@@ -85,6 +86,7 @@ export class SalesService {
     private readonly outbox: OutboxService,
     private readonly auth: AuthService,
     private readonly settings: SettingsService,
+    private readonly license: LicenseService,
   ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -92,6 +94,7 @@ export class SalesService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   async create(dto: CreateSaleDto, actor: AuthenticatedUser) {
+    await this.license.assertCanSell();
     if (dto.items.length === 0) {
       throw new ValidationError('La venta necesita al menos un artículo');
     }
